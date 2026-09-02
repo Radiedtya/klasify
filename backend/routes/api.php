@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\KelasController;
 use Illuminate\Support\Facades\Route;
 
 // ============ PUBLIC ROUTES ============
@@ -49,4 +50,18 @@ Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
             'message' => 'Anda adalah guru atau bendahara!'
         ]);
     });
+});
+
+// Boleh diakses oleh guru dan bendahara (untuk lihat)
+Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
+    Route::get('/kelas', [KelasController::class, 'index']);
+    Route::get('/kelas/{id}', [KelasController::class, 'show']);
+    Route::get('/kelas/{id}/siswa', [KelasController::class, 'getSiswa']);
+});
+
+// Hanya guru yang boleh create, update, delete
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::post('/kelas', [KelasController::class, 'store']);
+    Route::put('/kelas/{id}', [KelasController::class, 'update']);
+    Route::delete('/kelas/{id}', [KelasController::class, 'destroy']);
 });
