@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\IuranController;
 use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\SiswaController;
 use Illuminate\Support\Facades\Route;
@@ -70,4 +71,17 @@ Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
     Route::post('/siswa', [SiswaController::class, 'store']);
     Route::put('/siswa/{id}', [SiswaController::class, 'update']);
     Route::delete('/siswa/{id}', [SiswaController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'role:guru,bendahara,siswa'])->group(function () {
+    Route::get('/iuran', [IuranController::class, 'index']);
+    Route::get('/iuran/{id}', [IuranController::class, 'show']);
+    Route::get('/iuran/kelas/{kelas_id}', [IuranController::class, 'getByKelas']);
+    Route::get('/iuran/{id}/siswa', [IuranController::class, 'getStatusSiswa']);
+});
+
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::post('/iuran', [IuranController::class, 'store']);
+    Route::put('/iuran/{id}', [IuranController::class, 'update']);
+    Route::delete('/iuran/{id}', [IuranController::class, 'destroy']);
 });
