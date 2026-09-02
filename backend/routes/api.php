@@ -1,19 +1,18 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\KelasController;
+use App\Http\Controllers\Api\SiswaController;
 use Illuminate\Support\Facades\Route;
 
-// ============ PUBLIC ROUTES ============
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// ============ PROTECTED ROUTES ============
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 });
 
-// ============ ROUTES DENGAN ROLE ============
 Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
     Route::get('/guru/test', function () {
         return response()->json([
@@ -41,7 +40,6 @@ Route::middleware(['auth:sanctum', 'role:siswa'])->group(function () {
     });
 });
 
-// ============ MULTI ROLE ============
 Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
     Route::get('/guru-bendahara/test', function () {
         return response()->json([
@@ -49,4 +47,27 @@ Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
             'message' => 'Anda adalah guru atau bendahara!'
         ]);
     });
+});
+
+Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
+    Route::get('/kelas', [KelasController::class, 'index']);
+    Route::get('/kelas/{id}', [KelasController::class, 'show']);
+    Route::get('/kelas/{id}/siswa', [KelasController::class, 'getSiswa']);
+});
+
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::post('/kelas', [KelasController::class, 'store']);
+    Route::put('/kelas/{id}', [KelasController::class, 'update']);
+    Route::delete('/kelas/{id}', [KelasController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
+    Route::get('/siswa', [SiswaController::class, 'index']);
+    Route::get('/siswa/{id}', [SiswaController::class, 'show']);
+});
+
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::post('/siswa', [SiswaController::class, 'store']);
+    Route::put('/siswa/{id}', [SiswaController::class, 'update']);
+    Route::delete('/siswa/{id}', [SiswaController::class, 'destroy']);
 });
