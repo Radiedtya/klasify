@@ -18,8 +18,8 @@
 
 <script setup>
 import { ref } from "vue";
-import AppSidebar from "@/components/layout/AppSidebar.vue";
-import AppHeader from "@/components/layout/AppHeader.vue";
+import AppSidebar from "../components/layout/AppSidebar.vue";
+import AppHeader from "../components/layout/AppHeader.vue";
 
 const sidebarCollapsed = ref(false);
 </script>

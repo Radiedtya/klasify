@@ -138,13 +138,13 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { transaksiApi } from "@/api/transaksi";
+import { transaksiApi } from "../../api/transaksi";
 import { ArrowLeftIcon } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseInput from "@/components/common/BaseInput.vue";
-import BaseButton from "@/components/common/BaseButton.vue";
-import { formatRupiah } from "@/utils/formatRupiah";
-import { formatTanggal } from "@/utils/formatTanggal";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseInput from "../../components/common/BaseInput.vue";
+import BaseButton from "../../components/common/BaseButton.vue";
+import { formatRupiah } from "../../utils/formatRupiah";
+import { formatTanggal } from "../../utils/formatTanggal";
 import { toast } from "vue3-toastify";
 
 const route = useRoute();

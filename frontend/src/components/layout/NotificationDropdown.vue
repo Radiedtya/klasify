@@ -90,8 +90,8 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { BellIcon } from "@heroicons/vue/24/outline";
-import { useNotifikasiStore } from "@/stores/notifikasi";
-import { formatTanggalWaktu } from "@/utils/formatTanggal";
+import { useNotifikasiStore } from "../../stores/notifikasi";
+import { formatTanggalWaktu } from "../../utils/formatTanggal";
 import { useRouter } from "vue-router";
 
 const router = useRouter();

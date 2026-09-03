@@ -169,16 +169,16 @@
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/auth";
-import { transaksiApi } from "@/api/transaksi";
-import { iuranApi } from "@/api/iuran";
-import { siswaApi } from "@/api/siswa";
+import { useAuthStore } from "../../stores/auth";
+import { transaksiApi } from "../../api/transaksi";
+import { iuranApi } from "../../api/iuran";
+import { siswaApi } from "../../api/siswa";
 import { ArrowLeftIcon } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseInput from "@/components/common/BaseInput.vue";
-import BaseButton from "@/components/common/BaseButton.vue";
-import { formatRupiah } from "@/utils/formatRupiah";
-import { formatTanggal } from "@/utils/formatTanggal";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseInput from "../../components/common/BaseInput.vue";
+import BaseButton from "../../components/common/BaseButton.vue";
+import { formatRupiah } from "../../utils/formatRupiah";
+import { formatTanggal } from "../../utils/formatTanggal";
 import { toast } from "vue3-toastify";
 
 const router = useRouter();

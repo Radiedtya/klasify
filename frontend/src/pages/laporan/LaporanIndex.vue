@@ -305,18 +305,18 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from "vue";
-import { useAuthStore } from "@/stores/auth";
-import { laporanApi } from "@/api/laporan";
-import { siswaApi } from "@/api/siswa";
-import { kelasApi } from "@/api/kelas";
+import { useAuthStore } from "../../stores/auth";
+import { laporanApi } from "../../api/laporan";
+import { siswaApi } from "../../api/siswa";
+import { kelasApi } from "../../api/kelas";
 import {
   DocumentArrowDownIcon,
   TableCellsIcon,
 } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseTable from "@/components/common/BaseTable.vue";
-import StatusBadge from "@/components/common/StatusBadge.vue";
-import { formatRupiah } from "@/utils/formatRupiah";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseTable from "../../components/common/BaseTable.vue";
+import StatusBadge from "../../components/common/StatusBadge.vue";
+import { formatRupiah } from "../../utils/formatRupiah";
 import { toast } from "vue3-toastify";
 
 const authStore = useAuthStore();

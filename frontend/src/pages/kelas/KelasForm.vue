@@ -104,12 +104,12 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { kelasApi } from "@/api/kelas";
-import { userApi } from "@/api/user";
+import { kelasApi } from "../../api/kelas";
+import { userApi } from "../../api/user";
 import { ArrowLeftIcon } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseInput from "@/components/common/BaseInput.vue";
-import BaseButton from "@/components/common/BaseButton.vue";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseInput from "../../components/common/BaseInput.vue";
+import BaseButton from "../../components/common/BaseButton.vue";
 import { toast } from "vue3-toastify";
 
 const route = useRoute();

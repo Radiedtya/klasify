@@ -88,8 +88,8 @@
 <script setup>
 import { computed } from "vue";
 import { useRoute } from "vue-router";
-import { useAuthStore } from "@/stores/auth";
-import { useNotifikasiStore } from "@/stores/notifikasi";
+import { useAuthStore } from "../../stores/auth";
+import { useNotifikasiStore } from "../../stores/notifikasi";
 import {
   HomeIcon,
   UsersIcon,

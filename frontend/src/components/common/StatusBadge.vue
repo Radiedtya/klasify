@@ -10,7 +10,7 @@
 
 <script setup>
 import { computed } from "vue";
-import { getStatusColor, getStatusLabel } from "@/utils/statusColor";
+import { getStatusColor, getStatusLabel } from "../../utils/statusColor";
 
 const props = defineProps({
   status: {

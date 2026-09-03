@@ -83,12 +83,12 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { iuranApi } from "@/api/iuran";
+import { iuranApi } from "../../api/iuran";
 import { ArrowLeftIcon } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseTable from "@/components/common/BaseTable.vue";
-import StatusBadge from "@/components/common/StatusBadge.vue";
-import { formatTanggal } from "@/utils/formatTanggal";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseTable from "../../components/common/BaseTable.vue";
+import StatusBadge from "../../components/common/StatusBadge.vue";
+import { formatTanggal } from "../../utils/formatTanggal";
 
 const route = useRoute();
 const loading = ref(false);

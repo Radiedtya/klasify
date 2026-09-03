@@ -293,19 +293,19 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from "vue";
-import { useAuthStore } from "@/stores/auth";
-import { notifikasiApi } from "@/api/notifikasi";
-import { siswaApi } from "@/api/siswa";
-import { userApi } from "@/api/user";
-import { kelasApi } from "@/api/kelas";
+import { useAuthStore } from "../../stores/auth";
+import { notifikasiApi } from "../../api/notifikasi";
+import { siswaApi } from "../../api/siswa";
+import { userApi } from "../../api/user";
+import { kelasApi } from "../../api/kelas";
 import {
   CheckCircleIcon,
   TrashIcon,
   PaperAirplaneIcon,
 } from "@heroicons/vue/24/outline";
-import BaseInput from "@/components/common/BaseInput.vue";
-import BaseButton from "@/components/common/BaseButton.vue";
-import { formatTanggalWaktu } from "@/utils/formatTanggal";
+import BaseInput from "../../components/common/BaseInput.vue";
+import BaseButton from "../../components/common/BaseButton.vue";
+import { formatTanggalWaktu } from "../../utils/formatTanggal";
 import { toast } from "vue3-toastify";
 import Swal from "sweetalert2";
 

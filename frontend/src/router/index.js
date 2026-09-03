@@ -3,7 +3,14 @@ import { useAuthStore } from "../stores/auth";
 import DefaultLayout from "../layouts/DefaultLayout.vue";
 
 const routes = [
-  // Auth routes (tanpa layout)
+  // Home
+  {
+    path: "/",
+    name: "Home",
+    component: () => import("../pages/Home.vue"),
+  },
+
+  // Auth
   {
     path: "/login",
     name: "Login",
@@ -17,21 +24,15 @@ const routes = [
     meta: { requiresGuest: true },
   },
 
-  // Dashboard routes (dengan layout)
+  // Protected Routes
   {
-    path: "/",
+    path: "/dashboard",
     component: DefaultLayout,
     meta: { requiresAuth: true },
     children: [
       {
         path: "",
-        redirect: "/dashboard",
-      },
-      {
-        path: "dashboard",
-        name: "Dashboard",
-        // Redirect berdasarkan role
-        redirect: (to) => {
+        redirect: () => {
           const user = JSON.parse(localStorage.getItem("user") || "null");
           if (user?.role?.name === "guru") return "/dashboard/guru";
           if (user?.role?.name === "bendahara") return "/dashboard/bendahara";
@@ -40,19 +41,19 @@ const routes = [
         },
       },
       {
-        path: "dashboard/guru",
+        path: "guru",
         name: "DashboardGuru",
         component: () => import("../pages/dashboard/DashboardGuru.vue"),
         meta: { roles: ["guru"] },
       },
       {
-        path: "dashboard/bendahara",
+        path: "bendahara",
         name: "DashboardBendahara",
         component: () => import("../pages/dashboard/DashboardBendahara.vue"),
         meta: { roles: ["bendahara"] },
       },
       {
-        path: "dashboard/siswa",
+        path: "siswa",
         name: "DashboardSiswa",
         component: () => import("../pages/dashboard/DashboardSiswa.vue"),
         meta: { roles: ["siswa"] },
@@ -60,7 +61,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES SISWA ============
+  // Siswa
   {
     path: "/siswa",
     component: DefaultLayout,
@@ -91,7 +92,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES KELAS ============
+  // Kelas
   {
     path: "/kelas",
     component: DefaultLayout,
@@ -122,7 +123,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES IURAN ============
+  // Iuran
   {
     path: "/iuran",
     component: DefaultLayout,
@@ -153,7 +154,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES TRANSAKSI ============
+  // Transaksi
   {
     path: "/transaksi",
     component: DefaultLayout,
@@ -179,7 +180,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES PENGELUARAN ============
+  // Pengeluaran
   {
     path: "/pengeluaran",
     component: DefaultLayout,
@@ -211,7 +212,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES KETERLAMBATAN ============
+  // Keterlambatan
   {
     path: "/keterlambatan",
     component: DefaultLayout,
@@ -226,7 +227,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES NOTIFIKASI ============
+  // Notifikasi
   {
     path: "/notifikasi",
     component: DefaultLayout,
@@ -240,7 +241,7 @@ const routes = [
     ],
   },
 
-  // ============ ROUTES LAPORAN ============
+  // Laporan
   {
     path: "/laporan",
     component: DefaultLayout,
@@ -254,7 +255,7 @@ const routes = [
     ],
   },
 
-  // 404 Not Found
+  // 404
   {
     path: "/:pathMatch(.*)*",
     name: "NotFound",
@@ -262,61 +263,42 @@ const routes = [
   },
 ];
 
-// Navigation Guard
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore();
+router.beforeEach((to) => {
   const token = localStorage.getItem("token");
   const user = JSON.parse(localStorage.getItem("user") || "null");
+  const authStore = useAuthStore();
 
-  // Set auth state
   if (token && user) {
     authStore.setAuth(user, token);
   }
 
-  // Jika route butuh guest (login/register) dan user sudah login
-  if (to.meta.requiresGuest && token) {
-    if (user?.role?.name === "guru") {
-      return next("/dashboard/guru");
-    } else if (user?.role?.name === "bendahara") {
-      return next("/dashboard/bendahara");
-    } else if (user?.role?.name === "siswa") {
-      return next("/dashboard/siswa");
-    }
-    return next("/");
+  if (to.meta?.requiresGuest && token) {
+    if (user?.role?.name === "guru") return "/dashboard/guru";
+    if (user?.role?.name === "bendahara") return "/dashboard/bendahara";
+    if (user?.role?.name === "siswa") return "/dashboard/siswa";
+    return "/dashboard";
   }
 
-  // Jika route butuh auth dan user belum login
-  if (to.meta.requiresAuth && !token) {
-    return next("/login");
+  if (to.meta?.requiresAuth && !token) {
+    return "/login";
   }
 
-  // Jika route butuh role tertentu
-  if (to.meta.requiresAuth && to.meta.roles) {
-    // Jika user belum login, redirect ke login
-    if (!user) {
-      return next("/login");
-    }
-
-    // Cek apakah user punya role yang diizinkan
+  if (to.meta?.requiresAuth && to.meta?.roles) {
+    if (!user) return "/login";
     if (!to.meta.roles.includes(user.role?.name)) {
-      // Redirect ke dashboard sesuai role
-      if (user?.role?.name === "guru") {
-        return next("/dashboard/guru");
-      } else if (user?.role?.name === "bendahara") {
-        return next("/dashboard/bendahara");
-      } else if (user?.role?.name === "siswa") {
-        return next("/dashboard/siswa");
-      }
-      return next("/login");
+      if (user?.role?.name === "guru") return "/dashboard/guru";
+      if (user?.role?.name === "bendahara") return "/dashboard/bendahara";
+      if (user?.role?.name === "siswa") return "/dashboard/siswa";
+      return "/login";
     }
   }
 
-  next();
+  return true;
 });
 
 export default router;

@@ -154,9 +154,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from "vue";
-import { useAuthStore } from "@/stores/auth";
-import { siswaApi } from "@/api/siswa";
-import { kelasApi } from "@/api/kelas";
+import { useAuthStore } from "../../stores/auth";
+import { siswaApi } from "../../api/siswa";
+import { kelasApi } from "../../api/kelas";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -165,10 +165,10 @@ import {
   TrashIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseTable from "@/components/common/BaseTable.vue";
-import BaseInput from "@/components/common/BaseInput.vue";
-import StatusBadge from "@/components/common/StatusBadge.vue";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseTable from "../../components/common/BaseTable.vue";
+import BaseInput from "../../components/common/BaseInput.vue";
+import StatusBadge from "../../components/common/StatusBadge.vue";
 import { toast } from "vue3-toastify";
 import Swal from "sweetalert2";
 

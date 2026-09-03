@@ -213,11 +213,11 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthStore } from "../../stores/auth";
 import { toast } from "vue3-toastify";
-import BaseInput from "@/components/common/BaseInput.vue";
-import BaseButton from "@/components/common/BaseButton.vue";
-import api from "@/api/axios";
+import BaseInput from "../../components/common/BaseInput.vue";
+import BaseButton from "../../components/common/BaseButton.vue";
+import api from "../../api/axios";
 
 const router = useRouter();
 const authStore = useAuthStore();

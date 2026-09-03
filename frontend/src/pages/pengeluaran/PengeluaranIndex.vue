@@ -141,9 +141,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from "vue";
-import { useAuthStore } from "@/stores/auth";
-import { pengeluaranApi } from "@/api/pengeluaran";
-import { kelasApi } from "@/api/kelas";
+import { useAuthStore } from "../../stores/auth";
+import { pengeluaranApi } from "../../api/pengeluaran";
+import { kelasApi } from "../../api/kelas";
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -151,11 +151,11 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseTable from "@/components/common/BaseTable.vue";
-import BaseInput from "@/components/common/BaseInput.vue";
-import StatusBadge from "@/components/common/StatusBadge.vue";
-import { formatRupiah } from "@/utils/formatRupiah";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseTable from "../../components/common/BaseTable.vue";
+import BaseInput from "../../components/common/BaseInput.vue";
+import StatusBadge from "../../components/common/StatusBadge.vue";
+import { formatRupiah } from "../../utils/formatRupiah";
 import { toast } from "vue3-toastify";
 import Swal from "sweetalert2";
 import { useRouter } from "vue-router";

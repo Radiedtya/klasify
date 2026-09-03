@@ -56,7 +56,7 @@ import {
   UserIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/vue/24/outline";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthStore } from "../../stores/auth";
 import { useRouter } from "vue-router";
 import Swal from "sweetalert2";
 

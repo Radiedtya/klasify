@@ -124,18 +124,18 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from "vue";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthStore } from "../../stores/auth";
 import {
   CurrencyDollarIcon,
   ArrowUpIcon,
   ArrowDownIcon,
   ClockIcon,
 } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseTable from "@/components/common/BaseTable.vue";
-import StatusBadge from "@/components/common/StatusBadge.vue";
-import { formatRupiah } from "@/utils/formatRupiah";
-import api from "@/api/axios";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseTable from "../../components/common/BaseTable.vue";
+import StatusBadge from "../../components/common/StatusBadge.vue";
+import { formatRupiah } from "../../utils/formatRupiah";
+import api from "../../api/axios";
 
 const authStore = useAuthStore();
 const user = authStore.user;

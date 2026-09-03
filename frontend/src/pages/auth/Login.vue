@@ -124,11 +124,11 @@
 <script setup>
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/auth";
+import { useAuthStore } from "../../stores/auth";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/outline";
 import { toast } from "vue3-toastify";
-import BaseInput from "@/components/common/BaseInput.vue";
-import BaseButton from "@/components/common/BaseButton.vue";
+import BaseInput from "../../components/common/BaseInput.vue";
+import BaseButton from "../../components/common/BaseButton.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();

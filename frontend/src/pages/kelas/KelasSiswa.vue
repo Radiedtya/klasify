@@ -59,11 +59,11 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { kelasApi } from "@/api/kelas";
+import { kelasApi } from "../../api/kelas";
 import { ArrowLeftIcon } from "@heroicons/vue/24/outline";
-import BaseCard from "@/components/common/BaseCard.vue";
-import BaseTable from "@/components/common/BaseTable.vue";
-import StatusBadge from "@/components/common/StatusBadge.vue";
+import BaseCard from "../../components/common/BaseCard.vue";
+import BaseTable from "../../components/common/BaseTable.vue";
+import StatusBadge from "../../components/common/StatusBadge.vue";
 
 const route = useRoute();
 const loading = ref(false);
