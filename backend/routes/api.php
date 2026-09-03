@@ -1,203 +1,187 @@
 <?php
 
-use App\Console\Commands\CekKeterlambatan;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\IuranController;
 use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\KeterlambatanController;
+use App\Http\Controllers\Api\LaporanController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\PengeluaranController;
 use App\Http\Controllers\Api\SiswaController;
 use App\Http\Controllers\Api\TransaksiController;
+use App\Console\Commands\CekKeterlambatan;
 use Illuminate\Support\Facades\Route;
 
+// ==========================================
+// PUBLIC ROUTES (Tanpa Login)
+// ==========================================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// ==========================================
+// AUTHENTICATED ROUTES (Wajib Login)
+// ==========================================
 Route::middleware('auth:sanctum')->group(function () {
+    
+    // --- Auth & Dashboard ---
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
-});
-
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::get('/guru/test', function () {
-        return response()->json([
-            'success' => true,
-            'message' => 'Anda adalah guru!'
-        ]);
-    });
-});
-
-Route::middleware(['auth:sanctum', 'role:bendahara'])->group(function () {
-    Route::get('/bendahara/test', function () {
-        return response()->json([
-            'success' => true,
-            'message' => 'Anda adalah bendahara!'
-        ]);
-    });
-});
-
-Route::middleware(['auth:sanctum', 'role:siswa'])->group(function () {
-    Route::get('/siswa/test', function () {
-        return response()->json([
-            'success' => true,
-            'message' => 'Anda adalah siswa!'
-        ]);
-    });
-});
-
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::get('/guru-bendahara/test', function () {
-        return response()->json([
-            'success' => true,
-            'message' => 'Anda adalah guru atau bendahara!'
-        ]);
-    });
-});
-
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::get('/kelas', [KelasController::class, 'index']);
-    Route::get('/kelas/{id}', [KelasController::class, 'show']);
-    Route::get('/kelas/{id}/siswa', [KelasController::class, 'getSiswa']);
-});
-
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::post('/kelas', [KelasController::class, 'store']);
-    Route::put('/kelas/{id}', [KelasController::class, 'update']);
-    Route::delete('/kelas/{id}', [KelasController::class, 'destroy']);
-});
-
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::get('/siswa', [SiswaController::class, 'index']);
-    Route::get('/siswa/{id}', [SiswaController::class, 'show']);
-});
-
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::post('/siswa', [SiswaController::class, 'store']);
-    Route::put('/siswa/{id}', [SiswaController::class, 'update']);
-    Route::delete('/siswa/{id}', [SiswaController::class, 'destroy']);
-});
-
-Route::middleware(['auth:sanctum', 'role:guru,bendahara,siswa'])->group(function () {
-    Route::get('/iuran', [IuranController::class, 'index']);
-    Route::get('/iuran/{id}', [IuranController::class, 'show']);
-    Route::get('/iuran/kelas/{kelas_id}', [IuranController::class, 'getByKelas']);
-    Route::get('/iuran/{id}/siswa', [IuranController::class, 'getStatusSiswa']);
-});
-
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::post('/iuran', [IuranController::class, 'store']);
-    Route::put('/iuran/{id}', [IuranController::class, 'update']);
-    Route::delete('/iuran/{id}', [IuranController::class, 'destroy']);
-});
-
-// Transaksi pending (bisa dilihat guru & bendahara)
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::get('/transaksi/pending', [TransaksiController::class, 'getPending']);
-});
-
-// Semua role bisa lihat transaksi (dengan batasan)
-Route::middleware(['auth:sanctum'])->group(function () {
-    // Siswa bisa lihat transaksinya sendiri
-    Route::get('/transaksi/saya', [TransaksiController::class, 'getMyTransaksi']);
-});
-
-// Guru & bendahara bisa lihat semua transaksi
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::get('/transaksi', [TransaksiController::class, 'index']);
-    Route::get('/transaksi/{id}', [TransaksiController::class, 'show']);
-    Route::get('/transaksi/siswa/{siswa_id}', [TransaksiController::class, 'getBySiswa']);
-    Route::get('/transaksi/iuran/{iuran_id}', [TransaksiController::class, 'getByIuran']);
-});
-
-// Hanya guru yang boleh delete transaksi
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::delete('/transaksi/{id}', [TransaksiController::class, 'destroy']);
-});
-
-// Siswa & bendahara bisa membuat transaksi (bayar)
-Route::middleware(['auth:sanctum', 'role:siswa,bendahara'])->group(function () {
-    Route::post('/transaksi', [TransaksiController::class, 'store']);
-});
-
-// Guru & bendahara bisa update & konfirmasi transaksi
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::put('/transaksi/{id}', [TransaksiController::class, 'update']);
-    Route::put('/transaksi/{id}/konfirmasi', [TransaksiController::class, 'konfirmasi']);
-});
-
-// Pengeluaran pending (hanya guru)
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::get('/pengeluaran/pending', [PengeluaranController::class, 'getPending']);
-});
-
-// Semua role bisa lihat pengeluaran (siswa hanya lihat)
-Route::middleware(['auth:sanctum', 'role:guru,bendahara,siswa'])->group(function () {
-    Route::get('/pengeluaran', [PengeluaranController::class, 'index']);
-    Route::get('/pengeluaran/{id}', [PengeluaranController::class, 'show']);
-    Route::get('/pengeluaran/kelas/{kelas_id}', [PengeluaranController::class, 'getByKelas']);
-    Route::get('/pengeluaran/summary/kategori', [PengeluaranController::class, 'getSummaryByKategori']);
-});
-
-// Hanya bendahara yang bisa mengajukan pengeluaran
-Route::middleware(['auth:sanctum', 'role:bendahara'])->group(function () {
-    Route::post('/pengeluaran', [PengeluaranController::class, 'store']);
-    Route::put('/pengeluaran/{id}', [PengeluaranController::class, 'update']);
-});
-
-// Hanya guru yang bisa setujui dan hapus
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::put('/pengeluaran/{id}/setujui', [PengeluaranController::class, 'setujui']);
-    Route::delete('/pengeluaran/{id}', [PengeluaranController::class, 'destroy']);
-});
-
-Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
-    Route::post('/keterlambatan/cek', function () {
-        try {
-            $command = new CekKeterlambatan();
-            $result = $command->handle();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Pengecekan keterlambatan berhasil dijalankan',
-                'result' => $result
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menjalankan pengecekan keterlambatan',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    });
-});
-
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::get('/keterlambatan', [KeterlambatanController::class, 'index']);
-    Route::get('/keterlambatan/siswa/{siswa_id}', [KeterlambatanController::class, 'getBySiswa']);
-});
-
-// Siswa bisa lihat keterlambatan sendiri
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/keterlambatan/saya', [KeterlambatanController::class, 'getMyKeterlambatan']);
-});
-
-Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
-});
 
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::get('/notifikasi', [NotifikasiController::class, 'index']);
-    Route::get('/notifikasi/unread', [NotifikasiController::class, 'getUnread']);
-    Route::put('/notifikasi/read-all', [NotifikasiController::class, 'markAllAsRead']);  // ✅ Pindahkan ke atas
-    Route::put('/notifikasi/{id}/read', [NotifikasiController::class, 'markAsRead']);
-    Route::delete('/notifikasi/read-all', [NotifikasiController::class, 'deleteAllRead']); // ✅ Pindahkan ke atas
-    Route::delete('/notifikasi/{id}', [NotifikasiController::class, 'destroy']);
-});
+    // --- Test Routes (Bisa dihapus kalau sudah tidak dipakai) ---
+    Route::get('/guru/test', fn () => response()->json(['success' => true, 'message' => 'Anda adalah guru!']))->middleware('role:guru');
+    Route::get('/bendahara/test', fn () => response()->json(['success' => true, 'message' => 'Anda adalah bendahara!']))->middleware('role:bendahara');
+    Route::get('/siswa/test', fn () => response()->json(['success' => true, 'message' => 'Anda adalah siswa!']))->middleware('role:siswa');
+    Route::get('/guru-bendahara/test', fn () => response()->json(['success' => true, 'message' => 'Anda adalah guru atau bendahara!']))->middleware('role:guru,bendahara');
 
-// Hanya guru dan bendahara yang bisa kirim notifikasi manual
-Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
-    Route::post('/notifikasi/send', [NotifikasiController::class, 'sendManual']);
-    Route::post('/notifikasi/send-kelas', [NotifikasiController::class, 'sendToKelas']);
+    // ==========================================
+    // KELAS ROUTES
+    // ==========================================
+    Route::prefix('kelas')->group(function () {
+        Route::get('/', [KelasController::class, 'index'])->middleware('role:guru,bendahara');
+        Route::get('/{id}', [KelasController::class, 'show'])->middleware('role:guru,bendahara');
+        Route::get('/{id}/siswa', [KelasController::class, 'getSiswa'])->middleware('role:guru,bendahara');
+        
+        Route::post('/', [KelasController::class, 'store'])->middleware('role:guru');
+        Route::put('/{id}', [KelasController::class, 'update'])->middleware('role:guru');
+        Route::delete('/{id}', [KelasController::class, 'destroy'])->middleware('role:guru');
+    });
+
+    // ==========================================
+    // SISWA ROUTES
+    // ==========================================
+    Route::prefix('siswa')->group(function () {
+        Route::get('/', [SiswaController::class, 'index'])->middleware('role:guru,bendahara');
+        Route::get('/{id}', [SiswaController::class, 'show'])->middleware('role:guru,bendahara');
+        
+        Route::post('/', [SiswaController::class, 'store'])->middleware('role:guru');
+        Route::put('/{id}', [SiswaController::class, 'update'])->middleware('role:guru');
+        Route::delete('/{id}', [SiswaController::class, 'destroy'])->middleware('role:guru');
+    });
+
+    // ==========================================
+    // IURAN ROUTES
+    // ==========================================
+    Route::prefix('iuran')->group(function () {
+        // Static routes first!
+        Route::get('/kelas/{kelas_id}', [IuranController::class, 'getByKelas'])->middleware('role:guru,bendahara,siswa');
+        
+        // Dynamic routes
+        Route::get('/', [IuranController::class, 'index'])->middleware('role:guru,bendahara,siswa');
+        Route::get('/{id}', [IuranController::class, 'show'])->middleware('role:guru,bendahara,siswa');
+        Route::get('/{id}/siswa', [IuranController::class, 'getStatusSiswa'])->middleware('role:guru,bendahara,siswa');
+        
+        Route::post('/', [IuranController::class, 'store'])->middleware('role:guru');
+        Route::put('/{id}', [IuranController::class, 'update'])->middleware('role:guru');
+        Route::delete('/{id}', [IuranController::class, 'destroy'])->middleware('role:guru');
+    });
+
+    // ==========================================
+    // TRANSAKSI ROUTES
+    // ==========================================
+    Route::prefix('transaksi')->group(function () {
+        // Static routes (Harus di atas {id})
+        Route::get('/saya', [TransaksiController::class, 'getMyTransaksi']); // Semua role bisa akses
+        Route::get('/pending', [TransaksiController::class, 'getPending'])->middleware('role:guru,bendahara');
+        Route::get('/siswa/{siswa_id}', [TransaksiController::class, 'getBySiswa'])->middleware('role:guru,bendahara');
+        Route::get('/iuran/{iuran_id}', [TransaksiController::class, 'getByIuran'])->middleware('role:guru,bendahara');
+        
+        // Dynamic routes
+        Route::get('/', [TransaksiController::class, 'index'])->middleware('role:guru,bendahara');
+        Route::get('/{id}', [TransaksiController::class, 'show'])->middleware('role:guru,bendahara');
+        
+        // Aksi
+        Route::post('/', [TransaksiController::class, 'store'])->middleware('role:siswa,bendahara');
+        Route::put('/{id}', [TransaksiController::class, 'update'])->middleware('role:guru,bendahara');
+        Route::put('/{id}/konfirmasi', [TransaksiController::class, 'konfirmasi'])->middleware('role:guru,bendahara');
+        Route::delete('/{id}', [TransaksiController::class, 'destroy'])->middleware('role:guru');
+    });
+
+    // ==========================================
+    // PENGELUARAN ROUTES
+    // ==========================================
+    Route::prefix('pengeluaran')->group(function () {
+        // Static routes first!
+        Route::get('/pending', [PengeluaranController::class, 'getPending'])->middleware('role:guru');
+        Route::get('/summary/kategori', [PengeluaranController::class, 'getSummaryByKategori'])->middleware('role:guru,bendahara,siswa');
+        Route::get('/kelas/{kelas_id}', [PengeluaranController::class, 'getByKelas'])->middleware('role:guru,bendahara,siswa');
+        
+        // Dynamic routes
+        Route::get('/', [PengeluaranController::class, 'index'])->middleware('role:guru,bendahara,siswa');
+        Route::get('/{id}', [PengeluaranController::class, 'show'])->middleware('role:guru,bendahara,siswa');
+        
+        // Aksi
+        Route::post('/', [PengeluaranController::class, 'store'])->middleware('role:bendahara');
+        Route::put('/{id}', [PengeluaranController::class, 'update'])->middleware('role:bendahara');
+        Route::put('/{id}/setujui', [PengeluaranController::class, 'setujui'])->middleware('role:guru');
+        Route::delete('/{id}', [PengeluaranController::class, 'destroy'])->middleware('role:guru');
+    });
+
+    // ==========================================
+    // KETERLAMBATAN ROUTES
+    // ==========================================
+    Route::prefix('keterlambatan')->group(function () {
+        // Static route
+        Route::get('/saya', [KeterlambatanController::class, 'getMyKeterlambatan']); // Semua role bisa akses
+        
+        // Dynamic routes
+        Route::get('/', [KeterlambatanController::class, 'index'])->middleware('role:guru,bendahara');
+        Route::get('/siswa/{siswa_id}', [KeterlambatanController::class, 'getBySiswa'])->middleware('role:guru,bendahara');
+        
+        // Cek keterlambatan (custom route)
+        Route::post('/cek', function () {
+            try {
+                $command = new CekKeterlambatan();
+                $result = $command->handle();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Pengecekan keterlambatan berhasil dijalankan',
+                    'result' => $result
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menjalankan pengecekan keterlambatan',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+        })->middleware('role:guru');
+    });
+
+    // ==========================================
+    // NOTIFIKASI ROUTES
+    // ==========================================
+    Route::prefix('notifikasi')->group(function () {
+        // Static action routes first
+        Route::get('/unread', [NotifikasiController::class, 'getUnread']);
+        Route::put('/read-all', [NotifikasiController::class, 'markAllAsRead']);
+        Route::delete('/read-all', [NotifikasiController::class, 'deleteAllRead']);
+        
+        // Send manual
+        Route::post('/send', [NotifikasiController::class, 'sendManual'])->middleware('role:guru,bendahara');
+        Route::post('/send-kelas', [NotifikasiController::class, 'sendToKelas'])->middleware('role:guru,bendahara');
+        
+        // Dynamic routes
+        Route::get('/', [NotifikasiController::class, 'index']);
+        Route::put('/{id}/read', [NotifikasiController::class, 'markAsRead']);
+        Route::delete('/{id}', [NotifikasiController::class, 'destroy']);
+    });
+
+    // ==========================================
+    // LAPORAN ROUTES
+    // ==========================================
+    Route::prefix('laporan')->middleware('role:guru,bendahara')->group(function () {
+        // Static routes
+        Route::get('/kas', [LaporanController::class, 'kas']);
+        Route::get('/export/pdf', [LaporanController::class, 'exportPdf']);
+        Route::get('/export/excel', [LaporanController::class, 'exportExcel']);
+        
+        // Dynamic routes
+        Route::get('/bulan/{bulan}/{tahun}', [LaporanController::class, 'perBulan']);
+        Route::get('/siswa/{siswa_id}', [LaporanController::class, 'perSiswa']);
+        Route::get('/kelas/{kelas_id}', [LaporanController::class, 'perKelas']);
+    });
+
 });
