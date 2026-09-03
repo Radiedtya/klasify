@@ -1,8 +1,11 @@
 <?php
 
+use App\Console\Commands\CekKeterlambatan;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\IuranController;
 use App\Http\Controllers\Api\KelasController;
+use App\Http\Controllers\Api\KeterlambatanController;
+use App\Http\Controllers\Api\PengeluaranController;
 use App\Http\Controllers\Api\SiswaController;
 use App\Http\Controllers\Api\TransaksiController;
 use Illuminate\Support\Facades\Route;
@@ -120,4 +123,60 @@ Route::middleware(['auth:sanctum', 'role:siswa,bendahara'])->group(function () {
 Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
     Route::put('/transaksi/{id}', [TransaksiController::class, 'update']);
     Route::put('/transaksi/{id}/konfirmasi', [TransaksiController::class, 'konfirmasi']);
+});
+
+// Pengeluaran pending (hanya guru)
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::get('/pengeluaran/pending', [PengeluaranController::class, 'getPending']);
+});
+
+// Semua role bisa lihat pengeluaran (siswa hanya lihat)
+Route::middleware(['auth:sanctum', 'role:guru,bendahara,siswa'])->group(function () {
+    Route::get('/pengeluaran', [PengeluaranController::class, 'index']);
+    Route::get('/pengeluaran/{id}', [PengeluaranController::class, 'show']);
+    Route::get('/pengeluaran/kelas/{kelas_id}', [PengeluaranController::class, 'getByKelas']);
+    Route::get('/pengeluaran/summary/kategori', [PengeluaranController::class, 'getSummaryByKategori']);
+});
+
+// Hanya bendahara yang bisa mengajukan pengeluaran
+Route::middleware(['auth:sanctum', 'role:bendahara'])->group(function () {
+    Route::post('/pengeluaran', [PengeluaranController::class, 'store']);
+    Route::put('/pengeluaran/{id}', [PengeluaranController::class, 'update']);
+});
+
+// Hanya guru yang bisa setujui dan hapus
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::put('/pengeluaran/{id}/setujui', [PengeluaranController::class, 'setujui']);
+    Route::delete('/pengeluaran/{id}', [PengeluaranController::class, 'destroy']);
+});
+
+Route::middleware(['auth:sanctum', 'role:guru'])->group(function () {
+    Route::post('/keterlambatan/cek', function () {
+        try {
+            $command = new CekKeterlambatan();
+            $result = $command->handle();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengecekan keterlambatan berhasil dijalankan',
+                'result' => $result
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menjalankan pengecekan keterlambatan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    });
+});
+
+Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
+    Route::get('/keterlambatan', [KeterlambatanController::class, 'index']);
+    Route::get('/keterlambatan/siswa/{siswa_id}', [KeterlambatanController::class, 'getBySiswa']);
+});
+
+// Siswa bisa lihat keterlambatan sendiri
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/keterlambatan/saya', [KeterlambatanController::class, 'getMyKeterlambatan']);
 });

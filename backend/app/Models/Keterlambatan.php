@@ -15,8 +15,8 @@ class Keterlambatan extends Model
     protected function casts(): array
     {
         return [
-            'hari_telat' => 'date',
-            'denda' => 'datetime',
+            'hari_telat' => 'integer',
+            'denda' => 'decimal:2',
         ];
     }
 
