@@ -57,7 +57,7 @@ class User extends Authenticatable
     }
 
     // Cek role helper
-    public function hasRole(bool $roleName): bool
+    public function hasRole(string $roleName): bool
     {
         return $this->role && $this->role->name === $roleName;
     }

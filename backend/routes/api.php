@@ -2,6 +2,7 @@
 
 use App\Console\Commands\CekKeterlambatan;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\IuranController;
 use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\KeterlambatanController;
@@ -179,4 +180,8 @@ Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
 // Siswa bisa lihat keterlambatan sendiri
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/keterlambatan/saya', [KeterlambatanController::class, 'getMyKeterlambatan']);
+});
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index']);
 });
