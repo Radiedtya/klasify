@@ -25,7 +25,7 @@
   }
 
   .sidebar-active::before {
-    content: '';
+    content: "";
     @apply absolute left-0 top-0 w-1 h-full bg-blue-600 rounded-r-full;
   }
 
@@ -79,6 +79,9 @@
 
   .badge-gray {
     @apply bg-gray-100 text-gray-800;
+  }
+  .stat-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-shadow duration-200 hover:shadow-md;
   }
 }
 
