@@ -145,6 +145,11 @@ const routes = [
         component: () => import("../pages/iuran/IuranForm.vue"),
         meta: { roles: ["guru"] },
       },
+      {
+        path: ":id/siswa",
+        name: "IuranSiswa",
+        component: () => import("../pages/iuran/IuranSiswa.vue"),
+      },
     ],
   },
 
@@ -196,6 +201,12 @@ const routes = [
         name: "PengeluaranEdit",
         component: () => import("../pages/pengeluaran/PengeluaranForm.vue"),
         meta: { roles: ["bendahara"] },
+      },
+      {
+        path: "setujui",
+        name: "PengeluaranSetujui",
+        component: () => import("../pages/pengeluaran/PengeluaranSetujui.vue"),
+        meta: { roles: ["guru"] },
       },
     ],
   },
