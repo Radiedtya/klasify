@@ -1,0 +1,400 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Models\Siswa;
+use App\Models\Kelas;
+use App\Models\Iuran;
+use App\Models\Transaksi;
+use App\Models\Pengeluaran;
+use App\Models\Keterlambatan;
+use App\Models\Notifikasi;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Exception;
+use Carbon\Carbon;
+
+class DashboardController extends Controller
+{
+    /**
+     * Get dashboard data berdasarkan role user
+     */
+    public function index(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak ditemukan'
+                ], 401);
+            }
+
+            // Cek role menggunakan method yang sudah ada di model User
+            if ($user->isGuru()) {
+                $data = $this->getGuruDashboard($request);
+            } elseif ($user->isBendahara()) {
+                $data = $this->getBendaharaDashboard($request);
+            } elseif ($user->isSiswa()) {
+                $data = $this->getSiswaDashboard($request);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Role tidak dikenali',
+                    'role' => $user->role->name ?? 'tidak ada role'
+                ], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data dashboard berhasil diambil',
+                'data' => $data
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data dashboard',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Dashboard untuk Guru
+     */
+    private function getGuruDashboard(Request $request)
+    {
+        $user = $request->user();
+
+        // Total siswa
+        $totalSiswa = Siswa::count();
+
+        // Total kas (pemasukan - pengeluaran)
+        $totalPemasukan = Transaksi::where('status', 'confirmed')->sum('jumlah');
+        $totalPengeluaran = Pengeluaran::where('status', 'approved')->sum('jumlah');
+        $totalKas = $totalPemasukan - $totalPengeluaran;
+
+        // Siswa telat bayar
+        $siswaTelat = Keterlambatan::where('status', 'belum_bayar')
+                                   ->distinct('siswa_id')
+                                   ->count('siswa_id');
+
+        // Total iuran aktif
+        $totalIuranAktif = Iuran::where('is_active', true)->count();
+
+        // Data grafik pembayaran per bulan (6 bulan terakhir)
+        $grafikPembayaran = $this->getGrafikPembayaran();
+
+        // Data grafik pengeluaran per bulan (6 bulan terakhir)
+        $grafikPengeluaran = $this->getGrafikPengeluaran();
+
+        // Daftar siswa telat (top 10)
+        $daftarSiswaTelat = Keterlambatan::with(['siswa.user', 'siswa.kelas'])
+                                         ->where('status', 'belum_bayar')
+                                         ->orderBy('hari_telat', 'desc')
+                                         ->limit(10)
+                                         ->get();
+
+        // Notifikasi belum dibaca
+        $notifikasiBelumDibaca = Notifikasi::where('user_id', $user->id)
+                                           ->where('is_read', false)
+                                           ->count();
+
+        // 5 notifikasi terbaru
+        $notifikasiTerbaru = Notifikasi::where('user_id', $user->id)
+                                       ->orderBy('created_at', 'desc')
+                                       ->limit(5)
+                                       ->get();
+
+        return [
+            'role' => 'guru',
+            'statistik' => [
+                'total_siswa' => $totalSiswa,
+                'total_kas' => (float) $totalKas,
+                'siswa_telat' => $siswaTelat,
+                'total_iuran_aktif' => $totalIuranAktif,
+            ],
+            'grafik' => [
+                'pembayaran_per_bulan' => $grafikPembayaran,
+                'pengeluaran_per_bulan' => $grafikPengeluaran,
+            ],
+            'siswa_telat' => $daftarSiswaTelat,
+            'notifikasi' => [
+                'belum_dibaca' => $notifikasiBelumDibaca,
+                'terbaru' => $notifikasiTerbaru,
+            ],
+        ];
+    }
+
+    /**
+     * Dashboard untuk Bendahara
+     */
+    private function getBendaharaDashboard(Request $request)
+    {
+        $user = $request->user();
+
+        // Total kas
+        $totalPemasukan = Transaksi::where('status', 'confirmed')->sum('jumlah');
+        $totalPengeluaran = Pengeluaran::where('status', 'approved')->sum('jumlah');
+        $totalKas = $totalPemasukan - $totalPengeluaran;
+
+        // Transaksi pending (belum dikonfirmasi)
+        $transaksiPending = Transaksi::where('status', 'pending')->count();
+
+        // Pengeluaran pending (belum disetujui)
+        $pengeluaranPending = Pengeluaran::where('status', 'pending')->count();
+
+        // Pengeluaran bulan ini
+        $pengeluaranBulanIni = Pengeluaran::where('status', 'approved')
+                                          ->whereMonth('tanggal', now()->month)
+                                          ->whereYear('tanggal', now()->year)
+                                          ->sum('jumlah');
+
+        // Pemasukan bulan ini
+        $pemasukanBulanIni = Transaksi::where('status', 'confirmed')
+                                      ->whereMonth('tanggal_bayar', now()->month)
+                                      ->whereYear('tanggal_bayar', now()->year)
+                                      ->sum('jumlah');
+
+        // Total siswa
+        $totalSiswa = Siswa::count();
+
+        // Data grafik pemasukan vs pengeluaran (6 bulan terakhir)
+        $grafikKas = $this->getGrafikKas();
+
+        // Daftar transaksi pending (top 10)
+        $daftarPending = Transaksi::with(['siswa.user', 'iuran.kelas'])
+                                  ->where('status', 'pending')
+                                  ->orderBy('created_at', 'asc')
+                                  ->limit(10)
+                                  ->get();
+
+        // Notifikasi belum dibaca
+        $notifikasiBelumDibaca = Notifikasi::where('user_id', $user->id)
+                                           ->where('is_read', false)
+                                           ->count();
+
+        // 5 notifikasi terbaru
+        $notifikasiTerbaru = Notifikasi::where('user_id', $user->id)
+                                       ->orderBy('created_at', 'desc')
+                                       ->limit(5)
+                                       ->get();
+
+        return [
+            'role' => 'bendahara',
+            'statistik' => [
+                'total_kas' => (float) $totalKas,
+                'transaksi_pending' => $transaksiPending,
+                'pengeluaran_pending' => $pengeluaranPending,
+                'pemasukan_bulan_ini' => (float) $pemasukanBulanIni,
+                'pengeluaran_bulan_ini' => (float) $pengeluaranBulanIni,
+                'total_siswa' => $totalSiswa,
+            ],
+            'grafik' => [
+                'kas_per_bulan' => $grafikKas,
+            ],
+            'transaksi_pending' => $daftarPending,
+            'notifikasi' => [
+                'belum_dibaca' => $notifikasiBelumDibaca,
+                'terbaru' => $notifikasiTerbaru,
+            ],
+        ];
+    }
+
+    /**
+     * Dashboard untuk Siswa
+     */
+    private function getSiswaDashboard(Request $request)
+    {
+        $user = $request->user();
+
+        // Cari data siswa
+        $siswa = Siswa::with(['kelas'])->where('user_id', $user->id)->first();
+
+        if (!$siswa) {
+            return [
+                'role' => 'siswa',
+                'message' => 'Data siswa tidak ditemukan',
+            ];
+        }
+
+        // Total transaksi (confirmed)
+        $totalTransaksi = Transaksi::where('siswa_id', $siswa->id)
+                                   ->where('status', 'confirmed')
+                                   ->count();
+
+        $totalBayar = Transaksi::where('siswa_id', $siswa->id)
+                               ->where('status', 'confirmed')
+                               ->sum('jumlah');
+
+        // Total transaksi pending
+        $transaksiPending = Transaksi::where('siswa_id', $siswa->id)
+                                     ->where('status', 'pending')
+                                     ->count();
+
+        // Total keterlambatan
+        $totalKeterlambatan = Keterlambatan::where('siswa_id', $siswa->id)
+                                           ->where('status', 'belum_bayar')
+                                           ->count();
+
+        $totalDenda = Keterlambatan::where('siswa_id', $siswa->id)
+                                   ->sum('denda');
+
+        // Status pembayaran iuran bulan ini
+        $iuranBulanIni = Iuran::where('kelas_id', $siswa->kelas_id)
+                              ->where('bulan', now()->month)
+                              ->where('tahun', now()->year)
+                              ->where('is_active', true)
+                              ->first();
+
+        $statusBayar = 'belum_bayar';
+        $tanggalBayar = null;
+
+        if ($iuranBulanIni) {
+            $transaksi = Transaksi::where('siswa_id', $siswa->id)
+                                  ->where('iuran_id', $iuranBulanIni->id)
+                                  ->first();
+
+            if ($transaksi) {
+                $statusBayar = $transaksi->status;
+                $tanggalBayar = $transaksi->tanggal_bayar;
+            }
+        }
+
+        // Riwayat transaksi (5 terakhir)
+        $riwayatTransaksi = Transaksi::with(['iuran.kelas'])
+                                     ->where('siswa_id', $siswa->id)
+                                     ->orderBy('created_at', 'desc')
+                                     ->limit(5)
+                                     ->get();
+
+        // Notifikasi belum dibaca
+        $notifikasiBelumDibaca = Notifikasi::where('user_id', $user->id)
+                                           ->where('is_read', false)
+                                           ->count();
+
+        // 5 notifikasi terbaru
+        $notifikasiTerbaru = Notifikasi::where('user_id', $user->id)
+                                       ->orderBy('created_at', 'desc')
+                                       ->limit(5)
+                                       ->get();
+
+        return [
+            'role' => 'siswa',
+            'profil' => [
+                'nama' => $user->name,
+                'nis' => $siswa->nis,
+                'kelas' => $siswa->kelas->nama ?? '-',
+            ],
+            'statistik' => [
+                'total_transaksi' => $totalTransaksi,
+                'total_bayar' => (float) $totalBayar,
+                'transaksi_pending' => $transaksiPending,
+                'total_keterlambatan' => $totalKeterlambatan,
+                'total_denda' => (float) $totalDenda,
+            ],
+            'status_bayar_bulan_ini' => [
+                'iuran' => $iuranBulanIni ? "{$iuranBulanIni->bulan}/{$iuranBulanIni->tahun}" : null,
+                'status' => $statusBayar,
+                'tanggal_bayar' => $tanggalBayar,
+            ],
+            'riwayat_transaksi' => $riwayatTransaksi,
+            'notifikasi' => [
+                'belum_dibaca' => $notifikasiBelumDibaca,
+                'terbaru' => $notifikasiTerbaru,
+            ],
+        ];
+    }
+
+    /**
+     * Data grafik pembayaran per bulan (6 bulan terakhir)
+     */
+    private function getGrafikPembayaran()
+    {
+        $data = [];
+        $labels = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $bulan = now()->subMonths($i);
+            $labels[] = $bulan->format('M Y');
+
+            $total = Transaksi::where('status', 'confirmed')
+                              ->whereMonth('tanggal_bayar', $bulan->month)
+                              ->whereYear('tanggal_bayar', $bulan->year)
+                              ->sum('jumlah');
+
+            $data[] = (float) $total;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $data,
+        ];
+    }
+
+    /**
+     * Data grafik pengeluaran per bulan (6 bulan terakhir)
+     */
+    private function getGrafikPengeluaran()
+    {
+        $data = [];
+        $labels = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $bulan = now()->subMonths($i);
+            $labels[] = $bulan->format('M Y');
+
+            $total = Pengeluaran::where('status', 'approved')
+                                ->whereMonth('tanggal', $bulan->month)
+                                ->whereYear('tanggal', $bulan->year)
+                                ->sum('jumlah');
+
+            $data[] = (float) $total;
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => $data,
+        ];
+    }
+
+    /**
+     * Data grafik kas (pemasukan vs pengeluaran) per bulan (6 bulan terakhir)
+     */
+    private function getGrafikKas()
+    {
+        $pemasukan = [];
+        $pengeluaran = [];
+        $labels = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $bulan = now()->subMonths($i);
+            $labels[] = $bulan->format('M Y');
+
+            // Pemasukan
+            $totalPemasukan = Transaksi::where('status', 'confirmed')
+                                       ->whereMonth('tanggal_bayar', $bulan->month)
+                                       ->whereYear('tanggal_bayar', $bulan->year)
+                                       ->sum('jumlah');
+
+            // Pengeluaran
+            $totalPengeluaran = Pengeluaran::where('status', 'approved')
+                                           ->whereMonth('tanggal', $bulan->month)
+                                           ->whereYear('tanggal', $bulan->year)
+                                           ->sum('jumlah');
+
+            $pemasukan[] = (float) $totalPemasukan;
+            $pengeluaran[] = (float) $totalPengeluaran;
+        }
+
+        return [
+            'labels' => $labels,
+            'pemasukan' => $pemasukan,
+            'pengeluaran' => $pengeluaran,
+        ];
+    }
+}
