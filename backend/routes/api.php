@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\IuranController;
 use App\Http\Controllers\Api\KelasController;
 use App\Http\Controllers\Api\KeterlambatanController;
+use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\PengeluaranController;
 use App\Http\Controllers\Api\SiswaController;
 use App\Http\Controllers\Api\TransaksiController;
@@ -184,4 +185,19 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
+});
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/notifikasi', [NotifikasiController::class, 'index']);
+    Route::get('/notifikasi/unread', [NotifikasiController::class, 'getUnread']);
+    Route::put('/notifikasi/read-all', [NotifikasiController::class, 'markAllAsRead']);  // ✅ Pindahkan ke atas
+    Route::put('/notifikasi/{id}/read', [NotifikasiController::class, 'markAsRead']);
+    Route::delete('/notifikasi/read-all', [NotifikasiController::class, 'deleteAllRead']); // ✅ Pindahkan ke atas
+    Route::delete('/notifikasi/{id}', [NotifikasiController::class, 'destroy']);
+});
+
+// Hanya guru dan bendahara yang bisa kirim notifikasi manual
+Route::middleware(['auth:sanctum', 'role:guru,bendahara'])->group(function () {
+    Route::post('/notifikasi/send', [NotifikasiController::class, 'sendManual']);
+    Route::post('/notifikasi/send-kelas', [NotifikasiController::class, 'sendToKelas']);
 });
