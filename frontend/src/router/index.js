@@ -23,6 +23,36 @@ const router = createRouter({
       name: 'dashboard',
       component: () => import('../views/dashboard/DashboardView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/siswa',
+      name: 'siswa',
+      component: () => import('../views/siswa/SiswaView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/iuran',
+      name: 'iuran',
+      component: () => import('../views/iuran/IuranView.vue'), // Sesuaikan lokasinya jika di src/views/IuranView.vue
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/kelas',
+      name: 'kelas',
+      component: () => import('../views/kelas/KelasView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/transaksi',
+      name: 'transaksi',
+      component: () => import('../views/transaksi/TransaksiView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/pengeluaran',
+      name: 'pengeluaran',
+      component: () => import('../views/pengeluaran/PengeluaranView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })

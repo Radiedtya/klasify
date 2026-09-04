@@ -8,19 +8,37 @@
       </div>
 
       <nav class="nav-menu">
-        <a href="#" class="nav-item active">
-          <i class="bi bi-grid-fill"></i>
-          <span>Dashboard</span>
-        </a>
-        <a href="#" class="nav-item">
-          <i class="bi bi-cash-stack"></i>
-          <span>Uang Kas</span>
-        </a>
-        <a href="#" class="nav-item">
-          <i class="bi bi-people-fill"></i>
-          <span>Siswa</span>
-        </a>
-      </nav>
+  <router-link to="/dashboard" class="nav-item active">
+    <i class="bi bi-grid-fill"></i>
+    <span>Dashboard</span>
+  </router-link>
+  
+  <!-- UBAH DI SINI -->
+  <router-link to="/siswa" class="nav-item">
+    <i class="bi bi-people-fill"></i>
+    <span>Siswa</span>
+  </router-link>
+
+  <router-link to="/iuran" class="nav-item">
+    <i class="bi bi-wallet2"></i>
+    <span>Iuran</span>
+  </router-link>
+
+  <router-link to="/kelas" class="nav-item">
+    <i class="bi bi-wallet2"></i>
+    <span>Kelas</span>
+  </router-link>
+
+  <router-link to="/transaksi" class="nav-item">
+    <i class="bi bi-wallet2"></i>
+    <span>Transaksi</span>
+  </router-link>
+
+  <router-link to="/pengeluaran" class="nav-item">
+    <i class="bi bi-wallet2"></i>
+    <span>Pengeluaran</span>
+  </router-link>
+</nav>
 
       <button @click="handleLogout" class="btn-logout">
         <i class="bi bi-box-arrow-right"></i>
