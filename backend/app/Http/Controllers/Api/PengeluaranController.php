@@ -19,7 +19,7 @@ class PengeluaranController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Pengeluaran::with(['kelas', 'createdBy', 'approvedBy']);
+            $query = Pengeluaran::with(['kelas', 'createdBy.role', 'approvedBy.role']);
 
             // Filter by kelas
             if ($request->has('kelas_id')) {

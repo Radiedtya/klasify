@@ -3,65 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+// use App\Models\User;
 use App\Models\Siswa;
-use App\Models\Kelas;
+// use App\Models\Kelas;
 use App\Models\Iuran;
 use App\Models\Transaksi;
 use App\Models\Pengeluaran;
 use App\Models\Keterlambatan;
 use App\Models\Notifikasi;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\DB;
 use Exception;
-use Carbon\Carbon;
+// use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    /**
-     * Get dashboard data berdasarkan role user
-     */
-    public function index(Request $request)
-    {
-        try {
-            $user = $request->user();
-
-            if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User tidak ditemukan'
-                ], 401);
-            }
-
-            // Cek role menggunakan method yang sudah ada di model User
-            if ($user->isGuru()) {
-                $data = $this->getGuruDashboard($request);
-            } elseif ($user->isBendahara()) {
-                $data = $this->getBendaharaDashboard($request);
-            } elseif ($user->isSiswa()) {
-                $data = $this->getSiswaDashboard($request);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Role tidak dikenali',
-                    'role' => $user->role->name ?? 'tidak ada role'
-                ], 403);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Data dashboard berhasil diambil',
-                'data' => $data
-            ], 200);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data dashboard',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     /**
      * Dashboard untuk Guru
@@ -99,6 +55,26 @@ class DashboardController extends Controller
                                          ->limit(10)
                                          ->get();
 
+        // --- TAMBAHAN BARU UNTUK UI ---
+        
+        // Status Iuran buat Chart Donut
+        $statusIuran = [
+            'lunas' => Transaksi::where('status', 'confirmed')->count(),
+            'pending' => Transaksi::where('status', 'pending')->count(),
+            'ditolak' => Transaksi::where('status', 'rejected')->count(),
+        ];
+
+        // Iuran Aktif List (5 terbaru)
+        $iuranAktifList = Iuran::where('is_active', true)->latest()->limit(5)->get();
+
+        // Transaksi Terbaru (5 terbaru)
+        $transaksiTerbaru = Transaksi::with(['siswa.user', 'iuran.kelas'])
+                                     ->latest()
+                                     ->limit(5)
+                                     ->get();
+
+        // ------------------------------
+
         // Notifikasi belum dibaca
         $notifikasiBelumDibaca = Notifikasi::where('user_id', $user->id)
                                            ->where('is_read', false)
@@ -122,7 +98,10 @@ class DashboardController extends Controller
                 'pembayaran_per_bulan' => $grafikPembayaran,
                 'pengeluaran_per_bulan' => $grafikPengeluaran,
             ],
+            'status_iuran' => $statusIuran,
             'siswa_telat' => $daftarSiswaTelat,
+            'iuran_aktif' => $iuranAktifList,
+            'transaksi_terbaru' => $transaksiTerbaru,
             'notifikasi' => [
                 'belum_dibaca' => $notifikasiBelumDibaca,
                 'terbaru' => $notifikasiTerbaru,
@@ -166,23 +145,24 @@ class DashboardController extends Controller
         // Data grafik pemasukan vs pengeluaran (6 bulan terakhir)
         $grafikKas = $this->getGrafikKas();
 
+        // --- TAMBAHAN UNTUK UI CHART ---
+        $statusIuran = [
+            'lunas' => Transaksi::where('status', 'confirmed')->count(),
+            'pending' => $transaksiPending,
+            'ditolak' => Transaksi::where('status', 'rejected')->count(),
+        ];
+
         // Daftar transaksi pending (top 10)
         $daftarPending = Transaksi::with(['siswa.user', 'iuran.kelas'])
                                   ->where('status', 'pending')
                                   ->orderBy('created_at', 'asc')
                                   ->limit(10)
                                   ->get();
+        // ------------------------------
 
-        // Notifikasi belum dibaca
-        $notifikasiBelumDibaca = Notifikasi::where('user_id', $user->id)
-                                           ->where('is_read', false)
-                                           ->count();
-
-        // 5 notifikasi terbaru
-        $notifikasiTerbaru = Notifikasi::where('user_id', $user->id)
-                                       ->orderBy('created_at', 'desc')
-                                       ->limit(5)
-                                       ->get();
+        // Notifikasi
+        $notifikasiBelumDibaca = Notifikasi::where('user_id', $user->id)->where('is_read', false)->count();
+        $notifikasiTerbaru = Notifikasi::where('user_id', $user->id)->orderBy('created_at', 'desc')->limit(5)->get();
 
         return [
             'role' => 'bendahara',
@@ -194,10 +174,9 @@ class DashboardController extends Controller
                 'pengeluaran_bulan_ini' => (float) $pengeluaranBulanIni,
                 'total_siswa' => $totalSiswa,
             ],
-            'grafik' => [
-                'kas_per_bulan' => $grafikKas,
-            ],
-            'transaksi_pending' => $daftarPending,
+            'grafik' => $grafikKas,
+            'status_iuran' => $statusIuran,
+            'transaksi_pending_list' => $daftarPending,
             'notifikasi' => [
                 'belum_dibaca' => $notifikasiBelumDibaca,
                 'terbaru' => $notifikasiTerbaru,
@@ -244,11 +223,11 @@ class DashboardController extends Controller
         $totalDenda = Keterlambatan::where('siswa_id', $siswa->id)
                                    ->sum('denda');
 
-        // Status pembayaran iuran bulan ini
+        // FIX: Ambil iuran TERBARU yang aktif di kelas tersebut (bukan cuma bulan ini)
         $iuranBulanIni = Iuran::where('kelas_id', $siswa->kelas_id)
-                              ->where('bulan', now()->month)
-                              ->where('tahun', now()->year)
                               ->where('is_active', true)
+                              ->orderBy('tahun', 'desc')
+                              ->orderBy('bulan', 'desc')
                               ->first();
 
         $statusBayar = 'belum_bayar';
@@ -263,6 +242,23 @@ class DashboardController extends Controller
                 $statusBayar = $transaksi->status;
                 $tanggalBayar = $transaksi->tanggal_bayar;
             }
+        }
+
+        // Tambahan: Grafik Pembayaran 6 Bulan Terakhir
+        $grafikPembayaran = [
+            'labels' => [],
+            'data' => []
+        ];
+        for ($i = 5; $i >= 0; $i--) {
+            $bulan = now()->subMonths($i);
+            $grafikPembayaran['labels'][] = $bulan->format('M Y');
+
+            $total = Transaksi::where('siswa_id', $siswa->id)
+                              ->where('status', 'confirmed')
+                              ->whereMonth('tanggal_bayar', $bulan->month)
+                              ->whereYear('tanggal_bayar', $bulan->year)
+                              ->sum('jumlah');
+            $grafikPembayaran['data'][] = (float) $total;
         }
 
         // Riwayat transaksi (5 terakhir)
@@ -297,6 +293,7 @@ class DashboardController extends Controller
                 'total_keterlambatan' => $totalKeterlambatan,
                 'total_denda' => (float) $totalDenda,
             ],
+            'grafik' => $grafikPembayaran,
             'status_bayar_bulan_ini' => [
                 'iuran' => $iuranBulanIni ? "{$iuranBulanIni->bulan}/{$iuranBulanIni->tahun}" : null,
                 'status' => $statusBayar,
@@ -396,5 +393,50 @@ class DashboardController extends Controller
             'pemasukan' => $pemasukan,
             'pengeluaran' => $pengeluaran,
         ];
+    }
+
+    /**
+     * Get dashboard data berdasarkan role user
+     */
+    public function index(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak ditemukan'
+                ], 401);
+            }
+
+            // Cek role menggunakan method yang sudah ada di model User
+            if ($user->isGuru()) {
+                $data = $this->getGuruDashboard($request);
+            } elseif ($user->isBendahara()) {
+                $data = $this->getBendaharaDashboard($request);
+            } elseif ($user->isSiswa()) {
+                $data = $this->getSiswaDashboard($request);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Role tidak dikenali',
+                    'role' => $user->role->name ?? 'tidak ada role'
+                ], 403);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data dashboard berhasil diambil',
+                'data' => $data
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data dashboard',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
