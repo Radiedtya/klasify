@@ -84,12 +84,23 @@ class TransaksiController extends Controller
     public function store(Request $request)
     {
         try {
+            $user = $request->user();
+
+            // Cari data siswa dari user yang login
+            $siswa = \App\Models\Siswa::where('user_id', $user->id)->first();
+
+            if (!$siswa) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data siswa tidak ditemukan untuk user ini'
+                ], 404);
+            }
+
             $validator = Validator::make($request->all(), [
-                'siswa_id' => 'required|exists:siswas,id',
                 'iuran_id' => 'required|exists:iurans,id',
                 'jumlah' => 'required|numeric|min:0',
                 'tanggal_bayar' => 'required|date',
-                'metode' => 'required|string|in:tunai,transfer,qris',
+                'metode' => 'required|string|in:transfer,cash,qris',
                 'bukti_bayar' => 'nullable|string|max:255',
                 'keterangan' => 'nullable|string',
             ]);
@@ -102,56 +113,34 @@ class TransaksiController extends Controller
                 ], 422);
             }
 
-            // Cek apakah iuran aktif
-            $iuran = Iuran::find($request->iuran_id);
-            if (!$iuran->is_active) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Iuran ini sudah tidak aktif'
-                ], 422);
-            }
-
-            // Cek apakah siswa sudah bayar untuk iuran ini
-            $existingTransaksi = Transaksi::where('siswa_id', $request->siswa_id)
+            // Cek apakah iuran ini sudah dibayar siswa (status confirmed/pending)
+            $existingTransaksi = Transaksi::where('siswa_id', $siswa->id)
                                           ->where('iuran_id', $request->iuran_id)
-                                          ->where('status', 'confirmed')
+                                          ->whereIn('status', ['confirmed', 'pending'])
                                           ->first();
 
             if ($existingTransaksi) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Siswa sudah membayar iuran ini'
-                ], 422);
-            }
-
-            // Cek apakah ada transaksi pending untuk iuran ini
-            $pendingTransaksi = Transaksi::where('siswa_id', $request->siswa_id)
-                                         ->where('iuran_id', $request->iuran_id)
-                                         ->where('status', 'pending')
-                                         ->first();
-
-            if ($pendingTransaksi) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Siswa sudah memiliki transaksi pending untuk iuran ini'
+                    'message' => 'Iuran ini sudah dibayar atau sedang menunggu konfirmasi'
                 ], 422);
             }
 
             $transaksi = Transaksi::create([
-                'siswa_id' => $request->siswa_id,
+                'siswa_id' => $siswa->id, // OTOMATIS DI-SET DARI USER LOGIN
                 'iuran_id' => $request->iuran_id,
                 'jumlah' => $request->jumlah,
                 'tanggal_bayar' => $request->tanggal_bayar,
                 'metode' => $request->metode,
                 'bukti_bayar' => $request->bukti_bayar,
-                'status' => 'pending',
                 'keterangan' => $request->keterangan,
+                'status' => 'pending',
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Transaksi berhasil dibuat. Menunggu konfirmasi.',
-                'data' => $transaksi->load('siswa.user', 'iuran')
+                'message' => 'Pembayaran berhasil dikirim, menunggu konfirmasi',
+                'data' => $transaksi
             ], 201);
 
         } catch (ValidationException $e) {
@@ -160,11 +149,10 @@ class TransaksiController extends Controller
                 'message' => 'Validasi gagal',
                 'errors' => $e->errors()
             ], 422);
-
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat transaksi',
+                'message' => 'Gagal mengirim pembayaran',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -544,7 +532,7 @@ class TransaksiController extends Controller
                 ], 404);
             }
 
-            $transaksi = Transaksi::with(['iuran.kelas', 'confirmedBy'])
+            $transaksi = Transaksi::with(['siswa.user','iuran.kelas', 'confirmedBy'])
                                 ->where('siswa_id', $siswa->id)
                                 ->orderBy('tanggal_bayar', 'desc')
                                 ->get();

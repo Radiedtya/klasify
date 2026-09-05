@@ -123,7 +123,7 @@ class KeterlambatanController extends Controller
                 ], 404);
             }
 
-            $keterlambatan = Keterlambatan::with(['iuran.kelas'])
+            $keterlambatan = Keterlambatan::with(['iuran.kelas', 'siswa.user', 'siswa.kelas'])
                                           ->where('siswa_id', $siswa->id)
                                           ->orderBy('created_at', 'desc')
                                           ->get();
