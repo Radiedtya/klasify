@@ -33,7 +33,7 @@ const router = createRouter({
     {
       path: '/iuran',
       name: 'iuran',
-      component: () => import('../views/iuran/IuranView.vue'), // Sesuaikan lokasinya jika di src/views/IuranView.vue
+      component: () => import('../views/iuran/IuranView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -57,7 +57,6 @@ const router = createRouter({
   ]
 })
 
-// Navigation Guard
 router.beforeEach((to, from) => {
   const token = localStorage.getItem('token')
 
