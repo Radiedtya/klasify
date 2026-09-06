@@ -21,7 +21,7 @@ class NotifikasiController extends Controller
         try {
             $user = $request->user();
             
-            $query = Notifikasi::where('user_id', $user->id);
+            $query = Notifikasi::with('sender')->where('user_id', $user->id);
 
             // Filter by status (sudah dibaca atau belum)
             if ($request->has('is_read')) {
@@ -62,7 +62,8 @@ class NotifikasiController extends Controller
         try {
             $user = $request->user();
 
-            $notifikasi = Notifikasi::where('user_id', $user->id)
+            $notifikasi = Notifikasi::with('sender')
+                                    ->where('user_id', $user->id)
                                     ->where('is_read', false)
                                     ->orderBy('created_at', 'desc')
                                     ->get();
@@ -195,6 +196,7 @@ class NotifikasiController extends Controller
 
             $notifikasi = Notifikasi::create([
                 'user_id' => $request->user_id,
+                'sender_id' => $user->id,
                 'judul' => $request->judul,
                 'pesan' => $request->pesan,
                 'tipe' => $request->tipe ?? 'info',
@@ -270,6 +272,7 @@ class NotifikasiController extends Controller
             foreach ($siswa as $s) {
                 $notifikasiData[] = [
                     'user_id' => $s->user_id,
+                    'sender_id' => $user->id,
                     'judul' => $request->judul,
                     'pesan' => $request->pesan,
                     'tipe' => $request->tipe ?? 'info',
