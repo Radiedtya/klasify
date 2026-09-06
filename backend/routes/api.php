@@ -8,9 +8,9 @@ use App\Http\Controllers\Api\KeterlambatanController;
 use App\Http\Controllers\Api\LaporanController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\PengeluaranController;
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\SiswaController;
 use App\Http\Controllers\Api\TransaksiController;
-// use App\Console\Commands\CekKeterlambatan;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
@@ -106,7 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [TransaksiController::class, 'show'])->middleware('role:guru,bendahara');
         
         // Aksi
-        Route::post('/', [TransaksiController::class, 'store'])->middleware('role:siswa,bendahara');
+        Route::post('/', [TransaksiController::class, 'store'])->middleware('role:siswa,bendahara,guru');
         Route::put('/{id}', [TransaksiController::class, 'update'])->middleware('role:guru,bendahara');
         Route::put('/{id}/konfirmasi', [TransaksiController::class, 'konfirmasi'])->middleware('role:guru,bendahara');
         Route::delete('/{id}', [TransaksiController::class, 'destroy'])->middleware('role:guru');
@@ -195,5 +195,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/siswa/{siswa_id}', [LaporanController::class, 'perSiswa']);
         Route::get('/kelas/{kelas_id}', [LaporanController::class, 'perKelas']);
     });
+
+    // ==========================================
+    // SETTINGS ROUTES
+    // ==========================================
+    Route::get('/settings', [SettingController::class, 'index']);
+    Route::put('/settings', [SettingController::class, 'update'])->middleware('role:guru');
 
 });

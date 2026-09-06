@@ -58,8 +58,12 @@ class CekKeterlambatan extends Command
                         $hariTelat = 1;
                     }
 
-                    // Hitung denda setelah hari telat dipastikan
-                    $denda = $this->hitungDenda($hariTelat, $iuran->nominal);
+                    // Ambil setting denda dari database
+                    $dendaPerHari = \App\Models\Setting::where('key', 'denda_per_hari')->value('value') ?? 5000;
+                    $maksDenda = \App\Models\Setting::where('key', 'maks_denda')->value('value') ?? 50000;
+
+                    // Hitung denda
+                    $denda = $this->hitungDenda($hariTelat, (float) $dendaPerHari, (float) $maksDenda);
 
                     // Cek apakah sudah ada data keterlambatan
                     $existingKeterlambatan = Keterlambatan::where('siswa_id', $siswa->id)
@@ -109,13 +113,9 @@ class CekKeterlambatan extends Command
         }
     }
 
-    private function hitungDenda(int $hariTelat, float $nominal): float
+    private function hitungDenda(int $hariTelat, float $dendaPerHari, float $maksDenda): float
     {
-        $dendaPerHari = 5000;
-        $maxDenda = 50000;
-
         $denda = $hariTelat * $dendaPerHari;
-
-        return (float) min($denda, $maxDenda);
+        return (float) min($denda, $maksDenda);
     }
 }
