@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaksi;
 use App\Models\Siswa;
 use App\Models\Iuran;
+use App\Models\Keterlambatan;
 // use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -171,6 +172,13 @@ class TransaksiController extends Controller
 
             $transaksi = Transaksi::create($dataTransaksi);
 
+            if ($status == 'confirmed') {
+                Keterlambatan::where('siswa_id', $siswa->id)
+                    ->where('iuran_id', $request->iuran_id)
+                    ->where('status', 'belum_bayar')
+                    ->update(['status' => 'sudah_bayar_denda']);
+            }
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Pembayaran berhasil dikirim',
@@ -339,7 +347,7 @@ class TransaksiController extends Controller
     }
 
     /**
-     * Konfirmasi transaksi (pending → confirmed/rejected)
+     * Konfirmasi transaksi (Approve/Reject)
      */
     public function konfirmasi(Request $request, int $id)
     {
@@ -384,6 +392,18 @@ class TransaksiController extends Controller
                     'keterangan' => $request->keterangan ?? $transaksi->keterangan,
                 ]);
 
+                // FIX: Update keterlambatan dipisah try-catch biar gak ganggu transaksi utama
+                if ($request->status == 'confirmed') {
+                    try {
+                        \App\Models\Keterlambatan::where('siswa_id', $transaksi->siswa_id)
+                            ->where('iuran_id', $transaksi->iuran_id)
+                            ->where('status', 'belum_bayar')
+                            ->update(['status' => 'sudah_bayar_denda']);
+                    } catch (\Exception $eKet) {
+                        \Illuminate\Support\Facades\Log::error('Gagal update keterlambatan: ' . $eKet->getMessage());
+                    }
+                }
+                
                 DB::commit();
 
                 $statusText = $request->status == 'confirmed' ? 'dikonfirmasi' : 'ditolak';
