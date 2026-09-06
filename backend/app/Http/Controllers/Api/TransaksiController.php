@@ -86,16 +86,7 @@ class TransaksiController extends Controller
         try {
             $user = $request->user();
 
-            // Cari data siswa dari user yang login
-            $siswa = \App\Models\Siswa::where('user_id', $user->id)->first();
-
-            if (!$siswa) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data siswa tidak ditemukan untuk user ini'
-                ], 404);
-            }
-
+            // Validasi dasar
             $validator = Validator::make($request->all(), [
                 'iuran_id' => 'required|exists:iurans,id',
                 'jumlah' => 'required|numeric|min:0',
@@ -113,6 +104,42 @@ class TransaksiController extends Controller
                 ], 422);
             }
 
+            $siswa = null;
+            $status = 'pending';
+            $confirmedBy = null;
+            $confirmedAt = null;
+
+            // Cek role yang input
+            if ($user->isSiswa()) {
+                // Kalau Siswa yang input, cari datanya sendiri & status wajib pending
+                $siswa = Siswa::where('user_id', $user->id)->first();
+                if (!$siswa) {
+                    return response()->json(['success' => false, 'message' => 'Data siswa tidak ditemukan'], 404);
+                }
+                $status = 'pending';
+            } else {
+                // Kalau Guru/Bendahara yang input (Input Cash)
+                $validatorRole = Validator::make($request->all(), [
+                    'siswa_id' => 'required|exists:siswas,id',
+                    'status' => 'required|string|in:pending,confirmed',
+                ]);
+
+                if ($validatorRole->fails()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validasi gagal',
+                        'errors' => $validatorRole->errors()
+                    ], 422);
+                }
+
+                $siswa = Siswa::find($request->siswa_id);
+                $status = $request->status;
+                
+                // Kalau langsung confirmed, catat siapa yang konfirmasi
+                $confirmedBy = $status === 'confirmed' ? $user->id : null;
+                $confirmedAt = $status === 'confirmed' ? now() : null;
+            }
+
             // Cek apakah iuran ini sudah dibayar siswa (status confirmed/pending)
             $existingTransaksi = Transaksi::where('siswa_id', $siswa->id)
                                           ->where('iuran_id', $request->iuran_id)
@@ -126,20 +153,27 @@ class TransaksiController extends Controller
                 ], 422);
             }
 
-            $transaksi = Transaksi::create([
-                'siswa_id' => $siswa->id, // OTOMATIS DI-SET DARI USER LOGIN
+            $dataTransaksi = [
+                'siswa_id' => $siswa->id,
                 'iuran_id' => $request->iuran_id,
                 'jumlah' => $request->jumlah,
                 'tanggal_bayar' => $request->tanggal_bayar,
                 'metode' => $request->metode,
                 'bukti_bayar' => $request->bukti_bayar,
                 'keterangan' => $request->keterangan,
-                'status' => 'pending',
-            ]);
+                'status' => $status,
+            ];
+
+            if (isset($confirmedBy)) {
+                $dataTransaksi['confirmed_by'] = $confirmedBy;
+                $dataTransaksi['confirmed_at'] = $confirmedAt;
+            }
+
+            $transaksi = Transaksi::create($dataTransaksi);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pembayaran berhasil dikirim, menunggu konfirmasi',
+                'message' => 'Pembayaran berhasil dikirim',
                 'data' => $transaksi
             ], 201);
 

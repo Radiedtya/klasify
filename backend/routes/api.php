@@ -106,7 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [TransaksiController::class, 'show'])->middleware('role:guru,bendahara');
         
         // Aksi
-        Route::post('/', [TransaksiController::class, 'store'])->middleware('role:siswa,bendahara');
+        Route::post('/', [TransaksiController::class, 'store'])->middleware('role:siswa,bendahara,guru');
         Route::put('/{id}', [TransaksiController::class, 'update'])->middleware('role:guru,bendahara');
         Route::put('/{id}/konfirmasi', [TransaksiController::class, 'konfirmasi'])->middleware('role:guru,bendahara');
         Route::delete('/{id}', [TransaksiController::class, 'destroy'])->middleware('role:guru');
