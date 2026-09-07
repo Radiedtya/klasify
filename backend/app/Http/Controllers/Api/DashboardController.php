@@ -206,6 +206,10 @@ class DashboardController extends Controller
                                    ->where('status', 'confirmed')
                                    ->count();
 
+        $totalIuranKelas = Iuran::where('kelas_id', $siswa->kelas_id)
+                                ->where('is_active', true)
+                                ->count();                           
+                                   
         $totalBayar = Transaksi::where('siswa_id', $siswa->id)
                                ->where('status', 'confirmed')
                                ->sum('jumlah');
@@ -292,6 +296,7 @@ class DashboardController extends Controller
                 'transaksi_pending' => $transaksiPending,
                 'total_keterlambatan' => $totalKeterlambatan,
                 'total_denda' => (float) $totalDenda,
+                'total_iuran_kelas' => $totalIuranKelas,
             ],
             'grafik' => $grafikPembayaran,
             'status_bayar_bulan_ini' => [

@@ -33,11 +33,11 @@ class UserSeeder extends Seeder
         $guru = User::create([
             'name' => 'Hernadhia, S.Pd.',
             'email' => 'buherna@klasify.com',
-            'password' => Hash::make('guru_rpl1'),
+            'password' => Hash::make('password'),
             'role_id' => $roleGuru->id,
-            'kelas_id' => null,
+            'kelas_id' => 1,
             'no_hp' => '081234567890',
-            'foto' => null,
+            'foto' => 'https://smkassalaambandung.sch.id/storage/01J3CBDT767VXYK1KFMBWB75DV.JPG',
             'is_active' => true,
         ]);
 
@@ -48,7 +48,7 @@ class UserSeeder extends Seeder
         $bendahara1 = User::create([
             'name' => 'Ahmad Fadilah',
             'email' => 'bendahara1@klasify.com',
-            'password' => Hash::make('bendahara_fadil123'),
+            'password' => Hash::make('password'),
             'role_id' => $roleBendahara->id,
             'kelas_id' => null,
             'no_hp' => '081298765432',
@@ -59,7 +59,7 @@ class UserSeeder extends Seeder
         $bendahara2 = User::create([
             'name' => 'Zaskia Ramdhani Putri',
             'email' => 'bendahara2@klasify.com',
-            'password' => Hash::make('bendahara_zaskia123'),
+            'password' => Hash::make('password'),
             'role_id' => $roleBendahara->id,
             'kelas_id' => null,
             'no_hp' => '081298765432',
@@ -254,10 +254,10 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Muhammad Radiedtya Pratama',
                 'email' => 'radit@klasify.com',
-                'nis' => '2025015',
+                'nis' => '24251753112',
                 'nisn' => '1234567905',
                 'kelas' => $kelasRPL1,
-                'no_hp' => '081200001116',
+                'no_hp' => '088222150964',
                 'tempat_lahir' => 'Bandung',
                 'tanggal_lahir' => '2009-02-20',
                 'alamat' => 'Jl. Jendral Sudirman No. 25, Bandung',
@@ -402,7 +402,7 @@ class UserSeeder extends Seeder
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('password'),
                 'role_id' => $roleSiswa->id,
                 'kelas_id' => $data['kelas']->id,
                 'no_hp' => $data['no_hp'],
