@@ -176,7 +176,7 @@ class TransaksiController extends Controller
             $transaksi = Transaksi::create($dataTransaksi);
 
             if ($status == 'confirmed') {
-                \App\Models\Keterlambatan::where('siswa_id', $siswa->id)
+                Keterlambatan::where('siswa_id', $siswa->id)
                     ->where('iuran_id', $request->iuran_id)
                     ->where('status', 'belum_bayar')
                     ->update(['status' => 'sudah_bayar_denda']);
@@ -184,11 +184,11 @@ class TransaksiController extends Controller
 
             // --- KIRIM NOTIF KE GURU & BENDAHARA (JIKA SISWA YANG BAYAR) ---
             if ($user->isSiswa()) {
-                $guruBendahara = \App\Models\User::whereHas('role', function($q) {
+                $guruBendahara = User::whereHas('role', function($q) {
                     $q->whereIn('name', ['guru', 'bendahara']);
                 })->get();
 
-                $bulanTahun = $transaksi->iuran ? \Carbon\Carbon::create()->month($transaksi->iuran->bulan)->format('F') . ' ' . $transaksi->iuran->tahun : '-';
+                $bulanTahun = $transaksi->iuran ? Carbon::create()->month($transaksi->iuran->bulan)->format('F') . ' ' . $transaksi->iuran->tahun : '-';
                 
                 foreach ($guruBendahara as $penerima) {
                     Notifikasi::create([
@@ -374,7 +374,7 @@ class TransaksiController extends Controller
     /**
      * Konfirmasi transaksi (Approve/Reject)
      */
-    public function konfirmasi(Request $request, int $id, User $user)
+    public function konfirmasi(Request $request, int $id)
     {
         try {
             $transaksi = Transaksi::find($id);
@@ -410,9 +410,11 @@ class TransaksiController extends Controller
             DB::beginTransaction();
 
             try {
+                $user = $request->user(); // Ambil user yang lagi login
+
                 $transaksi->update([
                     'status' => $request->status,
-                    'confirmed_by' => $request->user()->id,
+                    'confirmed_by' => $user->id,
                     'confirmed_at' => now(),
                     'keterangan' => $request->keterangan ?? $transaksi->keterangan,
                 ]);
@@ -661,5 +663,4 @@ class TransaksiController extends Controller
             ], 500);
         }
     }
-
 }

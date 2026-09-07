@@ -35,9 +35,9 @@ class UserSeeder extends Seeder
             'email' => 'buherna@klasify.com',
             'password' => Hash::make('password'),
             'role_id' => $roleGuru->id,
-            'kelas_id' => null,
+            'kelas_id' => 1,
             'no_hp' => '081234567890',
-            'foto' => null,
+            'foto' => 'https://smkassalaambandung.sch.id/storage/01J3CBDT767VXYK1KFMBWB75DV.JPG',
             'is_active' => true,
         ]);
 
@@ -254,10 +254,10 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Muhammad Radiedtya Pratama',
                 'email' => 'radit@klasify.com',
-                'nis' => '2025015',
+                'nis' => '24251753112',
                 'nisn' => '1234567905',
                 'kelas' => $kelasRPL1,
-                'no_hp' => '081200001116',
+                'no_hp' => '088222150964',
                 'tempat_lahir' => 'Bandung',
                 'tanggal_lahir' => '2009-02-20',
                 'alamat' => 'Jl. Jendral Sudirman No. 25, Bandung',
