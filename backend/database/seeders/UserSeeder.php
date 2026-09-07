@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
         $guru = User::create([
             'name' => 'Hernadhia, S.Pd.',
             'email' => 'buherna@klasify.com',
-            'password' => Hash::make('guru_rpl1'),
+            'password' => Hash::make('password'),
             'role_id' => $roleGuru->id,
             'kelas_id' => null,
             'no_hp' => '081234567890',
@@ -48,7 +48,7 @@ class UserSeeder extends Seeder
         $bendahara1 = User::create([
             'name' => 'Ahmad Fadilah',
             'email' => 'bendahara1@klasify.com',
-            'password' => Hash::make('bendahara_fadil123'),
+            'password' => Hash::make('password'),
             'role_id' => $roleBendahara->id,
             'kelas_id' => null,
             'no_hp' => '081298765432',
@@ -59,7 +59,7 @@ class UserSeeder extends Seeder
         $bendahara2 = User::create([
             'name' => 'Zaskia Ramdhani Putri',
             'email' => 'bendahara2@klasify.com',
-            'password' => Hash::make('bendahara_zaskia123'),
+            'password' => Hash::make('password'),
             'role_id' => $roleBendahara->id,
             'kelas_id' => null,
             'no_hp' => '081298765432',
@@ -402,7 +402,7 @@ class UserSeeder extends Seeder
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('password'),
                 'role_id' => $roleSiswa->id,
                 'kelas_id' => $data['kelas']->id,
                 'no_hp' => $data['no_hp'],
