@@ -3,13 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Pengeluaran;
 use App\Models\Kelas;
+use App\Models\Notifikasi;
+use App\Models\Pengeluaran;
+use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-use Exception;
-use Illuminate\Support\Facades\DB;
 
 class PengeluaranController extends Controller
 {
@@ -69,7 +71,7 @@ class PengeluaranController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, User $user)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -101,6 +103,23 @@ class PengeluaranController extends Controller
                 'created_by' => $request->user()->id,
                 'status' => 'pending',
             ]);
+
+            // KIRIM NOTIF KE GURU
+            $gurus = User::whereHas('role', function($q) {
+                $q->where('name', 'guru');
+            })->get();
+
+            foreach ($gurus as $guru) {
+                Notifikasi::create([
+                    'user_id' => $guru->id,
+                    'sender_id' => $user->id,
+                    'judul' => 'Pengajuan Dana Baru',
+                    'pesan' => "Bendahara {$user->name} mengajukan dana sebesar Rp " . number_format($request->jumlah, 0, ',', '.') . " untuk {$request->judul}.",
+                    'tipe' => 'warning',
+                    'is_read' => false,
+                    'link' => '/pengeluaran',
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -269,7 +288,7 @@ class PengeluaranController extends Controller
     /**
      * Setujui atau tolak pengeluaran
      */
-    public function setujui(Request $request, int $id)
+    public function setujui(Request $request, int $id, User $user)
     {
         try {
             $pengeluaran = Pengeluaran::find($id);
@@ -313,6 +332,31 @@ class PengeluaranController extends Controller
                         ? $pengeluaran->deskripsi . "\n\nCatatan: " . $request->catatan 
                         : $pengeluaran->deskripsi,
                 ]);
+
+                // KIRIM NOTIF KE BENDAHARA (CREATED_BY)
+                if ($pengeluaran->created_by) {
+                    if ($request->status == 'approved') {
+                        Notifikasi::create([
+                            'user_id' => $pengeluaran->created_by,
+                            'sender_id' => $user->id, // $user di sini adalah Guru
+                            'judul' => 'Pengajuan Dana Disetujui',
+                            'pesan' => "Pengajuan dana untuk \"{$pengeluaran->judul}\" telah disetujui oleh {$user->name}.",
+                            'tipe' => 'success',
+                            'is_read' => false,
+                            'link' => '/pengeluaran',
+                        ]);
+                    } else {
+                        Notifikasi::create([
+                            'user_id' => $pengeluaran->created_by,
+                            'sender_id' => $user->id,
+                            'judul' => 'Pengajuan Dana Ditolak',
+                            'pesan' => "Pengajuan dana untuk \"{$pengeluaran->judul}\" ditolak oleh {$user->name}.",
+                            'tipe' => 'danger',
+                            'is_read' => false,
+                            'link' => '/pengeluaran',
+                        ]);
+                    }
+                }
 
                 DB::commit();
 
