@@ -2,15 +2,16 @@
 
 namespace App\Console\Commands;
 
+use App\Events\SiswaTelatBayar;
 use App\Models\Iuran;
+use App\Models\Keterlambatan;
+use App\Models\Setting;
 use App\Models\Siswa;
 use App\Models\Transaksi;
-use App\Models\Keterlambatan;
-use App\Events\SiswaTelatBayar;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class CekKeterlambatan extends Command
 {
@@ -59,8 +60,8 @@ class CekKeterlambatan extends Command
                     }
 
                     // Ambil setting denda dari database
-                    $dendaPerHari = \App\Models\Setting::where('key', 'denda_per_hari')->value('value') ?? 5000;
-                    $maksDenda = \App\Models\Setting::where('key', 'maks_denda')->value('value') ?? 50000;
+                    $dendaPerHari = Setting::where('key', 'denda_per_hari')->value('value') ?? 5000;
+                    $maksDenda = Setting::where('key', 'maks_denda')->value('value') ?? 50000;
 
                     // Hitung denda
                     $denda = $this->hitungDenda($hariTelat, (float) $dendaPerHari, (float) $maksDenda);
