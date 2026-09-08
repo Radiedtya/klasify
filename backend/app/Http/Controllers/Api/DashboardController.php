@@ -3,77 +3,85 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-// use App\Models\User;
 use App\Models\Siswa;
-// use App\Models\Kelas;
 use App\Models\Iuran;
 use App\Models\Transaksi;
 use App\Models\Pengeluaran;
 use App\Models\Keterlambatan;
 use App\Models\Notifikasi;
 use Illuminate\Http\Request;
-// use Illuminate\Support\Facades\DB;
 use Exception;
-// use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
 
     /**
-     * Dashboard untuk Guru
+     * Dashboard untuk Guru (Scoped per Kelas)
      */
     private function getGuruDashboard(Request $request)
     {
         $user = $request->user();
+        $kelasId = $user->kelas_id; // Ambil kelas_id dari Guru yang login
 
-        // Total siswa
-        $totalSiswa = Siswa::count();
+        // Total siswa HANYA di kelasnya
+        $totalSiswa = Siswa::where('kelas_id', $kelasId)->count();
 
-        // Total kas (pemasukan - pengeluaran)
-        $totalPemasukan = Transaksi::where('status', 'confirmed')->sum('jumlah');
-        $totalPengeluaran = Pengeluaran::where('status', 'approved')->sum('jumlah');
+        // Total kas HANYA dari transaksi & pengeluaran kelasnya
+        $totalPemasukan = Transaksi::whereHas('siswa', function($q) use ($kelasId) {
+            $q->where('kelas_id', $kelasId);
+        })->where('status', 'confirmed')->sum('jumlah');
+        
+        $totalPengeluaran = Pengeluaran::where('kelas_id', $kelasId)
+                                        ->where('status', 'approved')
+                                        ->sum('jumlah');
         $totalKas = $totalPemasukan - $totalPengeluaran;
 
-        // Siswa telat bayar
-        $siswaTelat = Keterlambatan::where('status', 'belum_bayar')
-                                   ->distinct('siswa_id')
-                                   ->count('siswa_id');
+        // Siswa telat bayar HANYA di kelasnya
+        $siswaTelat = Keterlambatan::whereHas('siswa', function($q) use ($kelasId) {
+            $q->where('kelas_id', $kelasId);
+        })->where('status', 'belum_bayar')->distinct('siswa_id')->count('siswa_id');
 
-        // Total iuran aktif
-        $totalIuranAktif = Iuran::where('is_active', true)->count();
+        // Total iuran aktif HANYA di kelasnya
+        $totalIuranAktif = Iuran::where('kelas_id', $kelasId)->where('is_active', true)->count();
 
-        // Data grafik pembayaran per bulan (6 bulan terakhir)
-        $grafikPembayaran = $this->getGrafikPembayaran();
+        // Data grafik pembayaran & pengeluaran per bulan (6 bulan terakhir) HANYA kelasnya
+        $grafikPembayaran = $this->getGrafikPembayaranByKelas($kelasId);
+        $grafikPengeluaran = $this->getGrafikPengeluaranByKelas($kelasId);
 
-        // Data grafik pengeluaran per bulan (6 bulan terakhir)
-        $grafikPengeluaran = $this->getGrafikPengeluaran();
-
-        // Daftar siswa telat (top 10)
+        // Daftar siswa telat (top 10) HANYA di kelasnya
         $daftarSiswaTelat = Keterlambatan::with(['siswa.user', 'siswa.kelas'])
+                                         ->whereHas('siswa', function($q) use ($kelasId) {
+                                            $q->where('kelas_id', $kelasId);
+                                         })
                                          ->where('status', 'belum_bayar')
                                          ->orderBy('hari_telat', 'desc')
                                          ->limit(10)
                                          ->get();
 
-        // --- TAMBAHAN BARU UNTUK UI ---
-        
-        // Status Iuran buat Chart Donut
+        // Status Iuran buat Chart Donut HANYA kelasnya
         $statusIuran = [
-            'lunas' => Transaksi::where('status', 'confirmed')->count(),
-            'pending' => Transaksi::where('status', 'pending')->count(),
-            'ditolak' => Transaksi::where('status', 'rejected')->count(),
+            'lunas' => Transaksi::whereHas('siswa', function($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
+            })->where('status', 'confirmed')->count(),
+            'pending' => Transaksi::whereHas('siswa', function($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
+            })->where('status', 'pending')->count(),
+            'ditolak' => Transaksi::whereHas('siswa', function($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
+            })->where('status', 'rejected')->count(),
         ];
 
-        // Iuran Aktif List (5 terbaru)
-        $iuranAktifList = Iuran::where('is_active', true)->latest()->limit(5)->get();
+        // Iuran Aktif List (5 terbaru) HANYA kelasnya
+        $iuranAktifList = Iuran::where('kelas_id', $kelasId)->where('is_active', true)->latest()->limit(5)->get();
 
-        // Transaksi Terbaru (5 terbaru)
+        // Transaksi Terbaru (5 terbaru) HANYA kelasnya
         $transaksiTerbaru = Transaksi::with(['siswa.user', 'iuran.kelas'])
+                                     ->whereHas('siswa', function($q) use ($kelasId) {
+                                        $q->where('kelas_id', $kelasId);
+                                     })
                                      ->latest()
                                      ->limit(5)
                                      ->get();
-
-        // ------------------------------
 
         // Notifikasi belum dibaca
         $notifikasiBelumDibaca = Notifikasi::where('user_id', $user->id)
@@ -313,7 +321,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Data grafik pembayaran per bulan (6 bulan terakhir)
+     * Data grafik pembayaran per bulan (6 bulan terakhir) - GLOBAL (Bendahara)
      */
     private function getGrafikPembayaran()
     {
@@ -339,7 +347,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * Data grafik pengeluaran per bulan (6 bulan terakhir)
+     * Data grafik pengeluaran per bulan (6 bulan terakhir) - GLOBAL (Bendahara)
      */
     private function getGrafikPengeluaran()
     {
@@ -365,7 +373,56 @@ class DashboardController extends Controller
     }
 
     /**
-     * Data grafik kas (pemasukan vs pengeluaran) per bulan (6 bulan terakhir)
+     * Data grafik pembayaran per bulan (6 bulan terakhir) - PER KELAS (Guru)
+     */
+    private function getGrafikPembayaranByKelas($kelasId)
+    {
+        $data = [];
+        $labels = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $bulan = now()->subMonths($i);
+            $labels[] = $bulan->format('M Y');
+
+            $total = Transaksi::whereHas('siswa', function($q) use ($kelasId) {
+                $q->where('kelas_id', $kelasId);
+            })->where('status', 'confirmed')
+              ->whereMonth('tanggal_bayar', $bulan->month)
+              ->whereYear('tanggal_bayar', $bulan->year)
+              ->sum('jumlah');
+
+            $data[] = (float) $total;
+        }
+
+        return ['labels' => $labels, 'data' => $data];
+    }
+
+    /**
+     * Data grafik pengeluaran per bulan (6 bulan terakhir) - PER KELAS (Guru)
+     */
+    private function getGrafikPengeluaranByKelas($kelasId)
+    {
+        $data = [];
+        $labels = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $bulan = now()->subMonths($i);
+            $labels[] = $bulan->format('M Y');
+
+            $total = Pengeluaran::where('kelas_id', $kelasId)
+                                ->where('status', 'approved')
+                                ->whereMonth('tanggal', $bulan->month)
+                                ->whereYear('tanggal', $bulan->year)
+                                ->sum('jumlah');
+
+            $data[] = (float) $total;
+        }
+
+        return ['labels' => $labels, 'data' => $data];
+    }
+
+    /**
+     * Data grafik kas (pemasukan vs pengeluaran) per bulan (6 bulan terakhir) - GLOBAL (Bendahara)
      */
     private function getGrafikKas()
     {
