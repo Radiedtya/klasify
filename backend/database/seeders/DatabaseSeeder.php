@@ -26,8 +26,8 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             KelasSeeder::class,
             UserSeeder::class,
-            IuranSeeder::class,
-            TransaksiSeeder::class,
+            // IuranSeeder::class,
+            // TransaksiSeeder::class,
         ]);
     }
 }
