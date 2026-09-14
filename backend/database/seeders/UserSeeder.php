@@ -37,7 +37,8 @@ class UserSeeder extends Seeder
             'role_id' => $roleGuru->id,
             'kelas_id' => 1,
             'no_hp' => '081234567890',
-            'foto' => 'https://smkassalaambandung.sch.id/storage/01J3CBDT767VXYK1KFMBWB75DV.JPG',
+            // 'foto' => 'https://smkassalaambandung.sch.id/storage/01J3CBDT767VXYK1KFMBWB75DV.JPG',
+            'foto' => null,
             'is_active' => true,
         ]);
 
