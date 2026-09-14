@@ -38,6 +38,11 @@
     <i class="bi bi-wallet2"></i>
     <span>Pengeluaran</span>
   </router-link>
+
+  <router-link to="/laporan" class="nav-item">
+    <i class="bi bi-wallet2"></i>
+    <span>Laporan</span>
+  </router-link>
 </nav>
 
       <button @click="handleLogout" class="btn-logout">
