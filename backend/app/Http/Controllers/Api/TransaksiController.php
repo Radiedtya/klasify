@@ -95,7 +95,7 @@ class TransaksiController extends Controller
                 'iuran_id' => 'required|exists:iurans,id',
                 'jumlah' => 'required|numeric|min:0',
                 'tanggal_bayar' => 'required|date',
-                'metode' => 'required|string|in:transfer,cash,qris',
+                'metode' => 'required|string|in:tunai',
                 'bukti_bayar' => 'nullable|string|max:255',
                 'keterangan' => 'nullable|string',
             ]);
@@ -295,7 +295,7 @@ class TransaksiController extends Controller
                 'iuran_id' => 'sometimes|exists:iurans,id',
                 'jumlah' => 'sometimes|numeric|min:0',
                 'tanggal_bayar' => 'sometimes|date',
-                'metode' => 'sometimes|string|in:tunai,transfer,qris',
+                'metode' => 'sometimes|string|in:tunai',
                 'bukti_bayar' => 'nullable|string|max:255',
                 'keterangan' => 'nullable|string',
             ]);
