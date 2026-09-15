@@ -16,13 +16,13 @@
           <i class="bi bi-people-fill"></i>
           <span>Siswa</span>
         </router-link>
-        <router-link to="/kelas" class="nav-item">
-        <i class="bi bi-wallet2"></i>
-        <span>Kelas</span>
-        </router-link>
         <router-link to="/iuran" class="nav-item active">
           <i class="bi bi-wallet2"></i>
           <span>Iuran</span>
+        </router-link>
+        <router-link to="/kelas" class="nav-item">
+        <i class="bi bi-wallet2"></i>
+        <span>Kelas</span>
         </router-link>
         <router-link to="/transaksi" class="nav-item">
         <i class="bi bi-wallet2"></i>
