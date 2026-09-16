@@ -18,12 +18,7 @@ class KelasSeeder extends Seeder
         $kelas = [
             [
                 'nama' => 'XII RPL 1',
-                'tahun_ajaran' => '2025/2026',
-                'is_active' => true,
-            ],
-            [
-                'nama' => 'XII RPL 2',
-                'tahun_ajaran' => '2025/2026',
+                'tahun_ajaran' => '2026/2027',
                 'is_active' => true,
             ],
         ];
