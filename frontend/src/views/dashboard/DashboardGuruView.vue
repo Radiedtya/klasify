@@ -32,110 +32,150 @@
       <header class="topbar">
         <div>
           <h1>Dashboard Wali Kelas</h1>
-          <p>Ringkasan dan statistik keuangan kelas <strong>XII RPL 1</strong>.</p>
+          <p>Ringkasan dan statistik keuangan kelas <strong>{{ kelasInfo.nama_kelas || 'XII RPL 1' }}</strong>.</p>
         </div>
         <div class="user-profile">
-          <div class="avatar">G</div>
+          <div class="avatar">{{ user.nama ? user.nama.charAt(0).toUpperCase() : 'G' }}</div>
           <div class="profile-info">
-            <span class="name">Guru Wali Kelas</span>
-            <span class="role">XII RPL 1</span>
+            <span class="name">{{ user.nama || 'Guru Wali Kelas' }}</span>
+            <span class="role">{{ kelasInfo.nama_kelas || 'XII RPL 1' }}</span>
           </div>
         </div>
       </header>
 
-      <!-- Stat Cards -->
-      <section class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon blue"><i class="bi bi-cash-stack"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">Saldo Kas Kelas</span>
-            <h3 class="stat-value">{{ rupiah(3450000) }}</h3>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">Siswa Lunas Iuran</span>
-            <h3 class="stat-value">28 / 36 Siswa</h3>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">Total Menunggak</span>
-            <h3 class="stat-value">{{ rupiah(420000) }}</h3>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon red"><i class="bi bi-box-arrow-up-right"></i></div>
-          <div class="stat-info">
-            <span class="stat-label">Pengeluaran Bulan Ini</span>
-            <h3 class="stat-value">{{ rupiah(180000) }}</h3>
-          </div>
-        </div>
-      </section>
+      <!-- Indikator Loading -->
+      <div v-if="isLoading" class="loading-state">
+        <p>Memuat data statistik dari server...</p>
+      </div>
 
-      <!-- Visualisasi Grafik & Quick Action -->
-      <section class="dashboard-grid">
-        <!-- Minimalist Chart Simulation -->
-        <div class="card-box">
-          <h3>Grafik Pemasukan vs Pengeluaran (2026)</h3>
-          <div class="chart-placeholder">
-            <div class="bar-group" v-for="(bar, index) in chartData" :key="index">
-              <div class="bars">
-                <div class="bar in" :style="{ height: bar.in + '%' }" :title="'Masuk: ' + bar.in"></div>
-                <div class="bar out" :style="{ height: bar.out + '%' }" :title="'Keluar: ' + bar.out"></div>
-              </div>
-              <span class="month-label">{{ bar.month }}</span>
+      <template v-else>
+        <!-- Stat Cards -->
+        <section class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Saldo Kas Kelas</span>
+              <h3 class="stat-value">{{ rupiah(stats.saldo_kas) }}</h3>
             </div>
           </div>
-        </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Siswa Lunas Iuran</span>
+              <h3 class="stat-value">{{ stats.siswa_lunas }} / {{ stats.total_siswa }} Siswa</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon amber"><i class="bi bi-exclamation-triangle-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Menunggak</span>
+              <h3 class="stat-value">{{ rupiah(stats.total_menunggak) }}</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="bi bi-box-arrow-up-right"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Pengeluaran Bulan Ini</span>
+              <h3 class="stat-value">{{ rupiah(stats.pengeluaran_bulan_ini) }}</h3>
+            </div>
+          </div>
+        </section>
 
-        <!-- Request Approvals Summary -->
-        <div class="card-box">
-          <h3>Menunggu Persetujuan Anda</h3>
-          <div class="approval-list">
-            <div class="approval-item">
-              <div>
-                <strong>Beli Spidol & Penghapus</strong>
-                <p>Pengaju: Siti (Bendahara) • Rp 25.000</p>
+        <!-- Visualisasi Grafik & Quick Action -->
+        <section class="dashboard-grid">
+          <!-- Minimalist Chart Simulation -->
+          <div class="card-box">
+            <h3>Grafik Pemasukan vs Pengeluaran (2026)</h3>
+            <div class="chart-placeholder">
+              <div class="bar-group" v-for="(bar, index) in chartData" :key="index">
+                <div class="bars">
+                  <div class="bar in" :style="{ height: bar.in + '%' }" :title="'Masuk: ' + bar.in"></div>
+                  <div class="bar out" :style="{ height: bar.out + '%' }" :title="'Keluar: ' + bar.out"></div>
+                </div>
+                <span class="month-label">{{ bar.month }}</span>
               </div>
-              <router-link to="/guru/pengeluaran" class="btn-sm">Review</router-link>
-            </div>
-            <div class="approval-item">
-              <div>
-                <strong>Pembayaran Cash Budi</strong>
-                <p>Nominal: Rp 50.000 • Iuran Mei</p>
-              </div>
-              <router-link to="/guru/transaksi" class="btn-sm">Review</router-link>
             </div>
           </div>
-        </div>
-      </section>
+
+          <!-- Request Approvals Summary -->
+          <div class="card-box">
+            <h3>Menunggu Persetujuan Anda</h3>
+            <div class="approval-list">
+              <div v-if="approvals.length === 0" class="empty-text">
+                Tidak ada pengajuan pending.
+              </div>
+              <div v-else class="approval-item" v-for="item in approvals" :key="item.id">
+                <div>
+                  <strong>{{ item.judul }}</strong>
+                  <p>Pengaju: {{ item.pengaju }} • {{ rupiah(item.nominal) }}</p>
+                </div>
+                <router-link :to="item.link || '/guru/pengeluaran'" class="btn-sm">Review</router-link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </template>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { apiFetch } from '../../service/api'
 
 const router = useRouter()
+const isLoading = ref(true)
 
-const rupiah = (val) => 'Rp ' + Number(val).toLocaleString('id-ID')
+const user = ref({ nama: '' })
+const kelasInfo = ref({ nama_kelas: '' })
+
+const stats = ref({
+  saldo_kas: 0,
+  siswa_lunas: 0,
+  total_siswa: 0,
+  total_menunggak: 0,
+  pengeluaran_bulan_ini: 0
+})
 
 const chartData = ref([
-  { month: 'Jan', in: 70, out: 20 },
-  { month: 'Feb', in: 85, out: 40 },
-  { month: 'Mar', in: 60, out: 15 },
-  { month: 'Apr', in: 90, out: 50 },
-  { month: 'Mei', in: 75, out: 30 }
+  { month: 'Jan', in: 0, out: 0 },
+  { month: 'Feb', in: 0, out: 0 },
+  { month: 'Mar', in: 0, out: 0 },
+  { month: 'Apr', in: 0, out: 0 },
+  { month: 'Mei', in: 0, out: 0 }
 ])
+
+const approvals = ref([])
+
+const rupiah = (val) => 'Rp ' + Number(val || 0).toLocaleString('id-ID')
+
+const loadDashboardData = async () => {
+  isLoading.value = true
+  try {
+    const response = await apiFetch('/dashboard')
+    const data = response.data || response
+
+    if (data.user) user.value = data.user
+    if (data.kelas) kelasInfo.value = data.kelas
+    if (data.stats) stats.value = data.stats
+    if (data.chart) chartData.value = data.chart
+    if (data.approvals) approvals.value = data.approvals
+  } catch (error) {
+    console.error('Gagal mengambil data dashboard:', error.message)
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const handleLogout = () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+onMounted(() => {
+  loadDashboardData()
+})
 </script>
 
 <style scoped>
@@ -157,6 +197,7 @@ const handleLogout = () => {
 .user-profile .avatar { width: 32px; height: 32px; background: #0284c7; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
 .profile-info .name { font-size: 12px; font-weight: 700; display: block; }
 .profile-info .role { font-size: 10px; color: #64748b; }
+.loading-state { padding: 40px; text-align: center; color: #64748b; font-size: 14px; }
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
 .stat-card { background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 14px; }
 .stat-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
@@ -178,5 +219,6 @@ const handleLogout = () => {
 .approval-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
 .approval-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 8px; font-size: 12px; }
 .approval-item p { margin: 2px 0 0 0; color: #64748b; font-size: 11px; }
+.empty-text { font-size: 12px; color: #94a3b8; font-style: italic; }
 .btn-sm { background: #3b82f6; color: white; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 11px; }
 </style>

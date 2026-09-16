@@ -24,18 +24,76 @@ const router = createRouter({
       component: () => import('../views/dashboard/DashboardView.vue'),
       meta: { requiresAuth: true }
     },
-    // ⚠️ TAMBAHAN 1: Rute untuk Dashboard Siswa (Sesuaikan lokasi filenya jika berbeda)
     {
       path: '/dashboard-siswa',
       name: 'dashboard-siswa',
       component: () => import('../views/dashboard/DashboardSiswa.vue'), 
       meta: { requiresAuth: true }
     },
-    // ⚠️ TAMBAHAN 2: Rute untuk Dashboard Guru (Jika ada)
     {
-      path: '/dashboard-guru',
+      path: '/guru/dashboard',
       name: 'dashboard-guru',
       component: () => import('../views/dashboard/DashboardGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/kelas',
+      name: 'guru-kelas',
+      component: () => import('../views/guru/DataKelasGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/siswa',
+      name: 'guru-siswa',
+      component: () => import('../views/guru/DataSiswaGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/iuran',
+      name: 'guru-iuran',
+      component: () => import('../views/guru/DataIuranGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/transaksi',
+      name: 'guru-transaksi',
+      component: () => import('../views/guru/TransaksiGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/pengeluaran',
+      name: 'guru-pengeluaran',
+      component: () => import('../views/guru/PengeluaranGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/keterlambatan',
+      name: 'guru-keterlambatan',
+      component: () => import('../views/guru/KeterlambatanGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+     {
+      path: '/guru/laporan',
+      name: 'guru-laporan',
+      component: () => import('../views/guru/LaporanGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/notifikasi',
+      name: 'guru-notifikasi',
+      component: () => import('../views/guru/NotifikasiGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/pengaturan',
+      name: 'guru-pengaturan',
+      component: () => import('../views/guru/PengaturanGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/guru/profile',
+      name: 'guru-profile',
+      component: () => import('../views/guru/ProfileGuruView.vue'),
       meta: { requiresAuth: true }
     },
     {
@@ -54,24 +112,6 @@ const router = createRouter({
       path: '/kelas',
       name: 'kelas',
       component: () => import('../views/kelas/KelasView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/transaksi',
-      name: 'transaksi',
-      component: () => import('../views/transaksi/TransaksiView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/pengeluaran',
-      name: 'pengeluaran',
-      component: () => import('../views/pengeluaran/PengeluaranView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/laporan',
-      name: 'laporan',
-      component: () => import('../views/laporan/LaporanView.vue'),
       meta: { requiresAuth: true }
     }
   ]

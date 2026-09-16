@@ -49,73 +49,43 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { apiFetch } from '../../service/api'
 
 const router = useRouter()
+const errorMessage = ref('')
+const isLoading = ref(false)
 
-const form = reactive({
+// Menyamakan variabel form dengan v-model di template
+const form = ref({
   email: '',
   password: ''
 })
 
-const isLoading = ref(false)
-const errorMessage = ref('')
-const API_BASE_URL = 'http://localhost:8000/api'
-
 const handleLogin = async () => {
-  errorMessage.value = ''
-  
-  if (!form.email || !form.password) {
-    errorMessage.value = 'Email dan Password wajib diisi'
-    return
-  }
-
   isLoading.value = true
+  errorMessage.value = ''
 
   try {
-    // 1. Request Login ke API
-    const response = await axios.post(`${API_BASE_URL}/login`, form)
-    
-    const resData = response.data
-    const token = resData.token || resData.access_token || resData.data?.token
-    const user = resData.user || resData.data?.user || resData.data || {}
+    const res = await apiFetch('/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: form.value.email,
+        password: form.value.password
+      })
+    })
 
-    // 2. Simpan Token & User Data
-    if (token) localStorage.setItem('token', token)
-    localStorage.setItem('user_data', JSON.stringify(user))
-
-    // 3. Parsing Role ID (1: Bendahara, 2: Siswa, 3: Guru)
-    let rawRole = ""
-    if (typeof user.role === 'string') {
-      rawRole = user.role
-    } else if (typeof user.role === 'object' && user.role !== null) {
-      rawRole = user.role.name || user.role.slug || ""
-    } else if (user.role_id) {
-      if (user.role_id === 1) rawRole = "bendahara"
-      else if (user.role_id === 2) rawRole = "siswa"
-      else if (user.role_id === 3) rawRole = "guru"
+    if (res.token) {
+      localStorage.setItem('token', res.token)
+    } else if (res.data && res.data.token) {
+      localStorage.setItem('token', res.data.token)
     }
 
-    const role = String(rawRole).toLowerCase().trim()
-    console.log("Role Terbaca di Login:", role, "| Data User:", user)
-
-    // 4. Pengalihan Rute Berdasarkan Role
-    if (role === 'siswa' || role === 'student') {
-      router.push('/dashboard-siswa')
-    } else if (role === 'bendahara' || role === 'admin') {
-      router.push('/dashboard')
-    } else if (role === 'guru' || role === 'teacher') {
-      router.push('/dashboard-guru')
-    } else {
-      console.warn("Role tidak terdeteksi spesifik, default ke /dashboard-siswa")
-      router.push('/dashboard-siswa')
-    }
+    router.push('/dashboard-guru')
 
   } catch (error) {
-    console.error("Login Error:", error)
-    errorMessage.value = error.response?.data?.message || "Gagal masuk, periksa jaringan atau akun Anda."
+    errorMessage.value = error.message || 'Login gagal, periksa email dan password!'
   } finally {
     isLoading.value = false
   }
