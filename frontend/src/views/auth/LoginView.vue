@@ -1,155 +1,259 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-zinc-50 p-4 sm:p-8 lg:p-12 font-sans">
-    <div class="w-full max-w-5xl bg-white rounded-3xl shadow-xl border border-zinc-200 overflow-hidden grid grid-cols-1 lg:grid-cols-5">
-      
-      <!-- Form Login -->
-      <div class="lg:col-span-2 flex flex-col justify-center px-6 sm:px-10 lg:px-12 py-10 bg-white">
-        <div class="mx-auto w-full max-w-sm">
-          <div class="mb-8 text-center">
-            <h1 class="text-3xl font-bold text-zinc-900 tracking-tight">Klasify</h1>
-            <p class="text-zinc-500 text-sm mt-1">Masuk untuk mengelola kas kelas Anda</p>
-          </div>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-logo">K</div>
+        <h2>Klasify</h2>
+      </div>
+      <p class="subtitle">Masuk ke akun kamu untuk mengelola kas kelas</p>
 
-          <form @submit.prevent="handleLogin" class="space-y-5">
-            <!-- Error Server -->
-            <div v-if="serverError" class="bg-red-50 border border-red-200 text-red-600 text-xs p-3 rounded-lg">
-              {{ serverError }}
-            </div>
-
-            <!-- Email -->
-            <div>
-              <label for="email" class="block text-xs font-medium text-zinc-600 mb-1.5">Alamat Email</label>
-              <input
-                v-model="form.email"
-                @input="clearErrors"
-                type="email"
-                id="email"
-                class="w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-zinc-900 outline-none transition border-zinc-200"
-                placeholder="nama@email.com"
-              />
-              <p v-if="errors.email" class="text-red-500 text-[11px] mt-1">{{ errors.email }}</p>
-            </div>
-
-            <!-- Password -->
-            <div>
-              <label for="password" class="block text-xs font-medium text-zinc-600 mb-1.5">Password</label>
-              <div class="relative">
-                <input
-                  v-model="form.password"
-                  @input="clearErrors"
-                  :type="showPassword ? 'text' : 'password'"
-                  id="password"
-                  class="w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-zinc-900 outline-none transition border-zinc-200 pr-10"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  @click="showPassword = !showPassword"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-zinc-600"
-                >
-                  {{ showPassword ? 'Sembunyikan' : 'Lihat' }}
-                </button>
-              </div>
-              <p v-if="errors.password" class="text-red-500 text-[11px] mt-1">{{ errors.password }}</p>
-            </div>
-
-            <!-- Submit Button -->
-            <button
-              type="submit"
-              :disabled="loading"
-              class="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-2.5 rounded-lg font-semibold text-sm transition disabled:bg-zinc-400"
-            >
-              {{ loading ? "Memuat..." : "Masuk Sekarang" }}
-            </button>
-          </form>
-
-          <p class="text-center text-xs text-zinc-400 mt-8">© 2026 Klasify</p>
-        </div>
+      <!-- Alert Error -->
+      <div v-if="errorMessage" class="alert-error">
+        {{ errorMessage }}
       </div>
 
-      <!-- Branding / Image -->
-      <div class="hidden lg:block lg:col-span-3 relative bg-zinc-900 overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1000"
-          class="absolute inset-0 h-full w-full object-cover opacity-40"
-          alt="background"
-        />
-        <div class="relative z-10 flex flex-col justify-end h-full p-10 text-white">
-          <div class="bg-zinc-900/60 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-            <h2 class="text-2xl font-bold mb-2">Selamat Datang Kembali!</h2>
-            <p class="text-sm text-zinc-200">Kelola iuran, pengeluaran, dan laporan kas kelas Anda dengan mudah.</p>
-          </div>
+      <form @submit.prevent="handleLogin" class="login-form">
+        <div class="form-group">
+          <label>Email</label>
+          <input 
+            type="email" 
+            v-model="form.email" 
+            placeholder="nama@email.com" 
+            required 
+            :disabled="isLoading"
+          />
         </div>
-      </div>
 
+        <div class="form-group">
+          <label>Password</label>
+          <input 
+            type="password" 
+            v-model="form.password" 
+            placeholder="••••••••" 
+            required 
+            :disabled="isLoading"
+          />
+        </div>
+
+        <button type="submit" class="btn-login" :disabled="isLoading">
+          {{ isLoading ? 'Memproses...' : 'Masuk' }}
+        </button>
+      </form>
+
+      <div class="footer-text">
+        Belum punya akun? 
+        <router-link to="/register" class="link-register">Daftar di sini</router-link>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from "vue";
-import { useRouter } from "vue-router";
-import { useAuthStore } from "@/stores/auth";
+import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import axios from 'axios'
 
-const router = useRouter();
-const authStore = useAuthStore();
+const router = useRouter()
 
 const form = reactive({
-  email: "",
-  password: "",
-});
+  email: '',
+  password: ''
+})
 
-const loading = ref(false);
-const showPassword = ref(false);
-const serverError = ref("");
-const errors = reactive({
-  email: "",
-  password: "",
-});
-
-const clearErrors = () => {
-  errors.email = "";
-  errors.password = "";
-  serverError.value = "";
-};
+const isLoading = ref(false)
+const errorMessage = ref('')
+const API_BASE_URL = 'http://localhost:8000/api'
 
 const handleLogin = async () => {
-  if (!form.email) return (errors.email = "Email wajib diisi");
-  if (!form.password) return (errors.password = "Password wajib diisi");
+  errorMessage.value = ''
+  
+  if (!form.email || !form.password) {
+    errorMessage.value = 'Email dan Password wajib diisi'
+    return
+  }
 
-  loading.value = true;
+  isLoading.value = true
+
   try {
-    await authStore.login(form);
+    // 1. Request Login ke API
+    const response = await axios.post(`${API_BASE_URL}/login`, form)
+    
+    const resData = response.data
+    const token = resData.token || resData.access_token || resData.data?.token
+    const user = resData.user || resData.data?.user || resData.data || {}
 
-    const user = authStore.user || JSON.parse(localStorage.getItem('user_data') || '{}');
+    // 2. Simpan Token & User Data
+    if (token) localStorage.setItem('token', token)
+    localStorage.setItem('user_data', JSON.stringify(user))
 
-    let rawRole = "";
+    // 3. Parsing Role ID (1: Bendahara, 2: Siswa, 3: Guru)
+    let rawRole = ""
     if (typeof user.role === 'string') {
-      rawRole = user.role;
+      rawRole = user.role
     } else if (typeof user.role === 'object' && user.role !== null) {
-      rawRole = user.role.name || user.role.slug || "";
+      rawRole = user.role.name || user.role.slug || ""
     } else if (user.role_id) {
-      if (user.role_id === 1) rawRole = "bendahara";
-      else if (user.role_id === 2) rawRole = "siswa";
-      else if (user.role_id === 3) rawRole = "guru";
+      if (user.role_id === 1) rawRole = "bendahara"
+      else if (user.role_id === 2) rawRole = "siswa"
+      else if (user.role_id === 3) rawRole = "guru"
     }
 
-    const role = String(rawRole).toLowerCase();
+    const role = String(rawRole).toLowerCase().trim()
+    console.log("Role Terbaca di Login:", role, "| Data User:", user)
 
-    if (role === 'siswa') {
-      router.push('/dashboard-siswa');
-    } else if (role === 'bendahara') {
-      router.push('/dashboard');
-    } else if (role === 'guru') {
-      router.push('/dashboard-guru');
+    // 4. Pengalihan Rute Berdasarkan Role
+    if (role === 'siswa' || role === 'student') {
+      router.push('/dashboard-siswa')
+    } else if (role === 'bendahara' || role === 'admin') {
+      router.push('/dashboard')
+    } else if (role === 'guru' || role === 'teacher') {
+      router.push('/dashboard-guru')
     } else {
-      router.push('/dashboard-siswa');
+      console.warn("Role tidak terdeteksi spesifik, default ke /dashboard-siswa")
+      router.push('/dashboard-siswa')
     }
 
   } catch (error) {
-    serverError.value = error.response?.data?.message || "Gagal masuk, periksa jaringan atau akun Anda.";
+    console.error("Login Error:", error)
+    errorMessage.value = error.response?.data?.message || "Gagal masuk, periksa jaringan atau akun Anda."
   } finally {
-    loading.value = false;
+    isLoading.value = false
   }
-};
+}
 </script>
+
+<style scoped>
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  min-height: 100vh;
+  background-color: var(--bg, #f8fafc);
+}
+
+.login-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 400px;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  color: #000000;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.brand-logo {
+  width: 40px;
+  height: 40px;
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  color: #0f172a;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.alert-error {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.form-group input {
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  background: #ffffff;
+  color: #000000;
+}
+
+.form-group input:focus {
+  border-color: #3b82f6;
+}
+
+.btn-login {
+  margin-top: 8px;
+  background: #3b82f6;
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-login:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.btn-login:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.footer-text {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.link-register {
+  color: #3b82f6;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link-register:hover {
+  text-decoration: underline;
+}
+</style>
