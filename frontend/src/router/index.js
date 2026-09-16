@@ -24,6 +24,20 @@ const router = createRouter({
       component: () => import('../views/dashboard/DashboardView.vue'),
       meta: { requiresAuth: true }
     },
+    // ⚠️ TAMBAHAN 1: Rute untuk Dashboard Siswa (Sesuaikan lokasi filenya jika berbeda)
+    {
+      path: '/dashboard-siswa',
+      name: 'dashboard-siswa',
+      component: () => import('../views/dashboard/DashboardSiswa.vue'), 
+      meta: { requiresAuth: true }
+    },
+    // ⚠️ TAMBAHAN 2: Rute untuk Dashboard Guru (Jika ada)
+    {
+      path: '/dashboard-guru',
+      name: 'dashboard-guru',
+      component: () => import('../views/dashboard/DashboardGuruView.vue'),
+      meta: { requiresAuth: true }
+    },
     {
       path: '/siswa',
       name: 'siswa',
@@ -53,10 +67,17 @@ const router = createRouter({
       name: 'pengeluaran',
       component: () => import('../views/pengeluaran/PengeluaranView.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/laporan',
+      name: 'laporan',
+      component: () => import('../views/laporan/LaporanView.vue'),
+      meta: { requiresAuth: true }
     }
   ]
 })
 
+// Navigation Guard
 router.beforeEach((to, from) => {
   const token = localStorage.getItem('token')
 

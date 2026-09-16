@@ -23,11 +23,11 @@ class DatabaseSeeder extends Seeder
         // ]);
 
         $this->call([
-            // RoleSeeder::class,
-            // KelasSeeder::class,
-            // UserSeeder::class,
-            IuranSeeder::class,
-            TransaksiSeeder::class,
+            RoleSeeder::class,
+            KelasSeeder::class,
+            UserSeeder::class,
+            // IuranSeeder::class,
+            // TransaksiSeeder::class,
         ]);
     }
 }

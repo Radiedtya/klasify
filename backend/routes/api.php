@@ -8,9 +8,9 @@ use App\Http\Controllers\Api\KeterlambatanController;
 use App\Http\Controllers\Api\LaporanController;
 use App\Http\Controllers\Api\NotifikasiController;
 use App\Http\Controllers\Api\PengeluaranController;
+use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\SiswaController;
 use App\Http\Controllers\Api\TransaksiController;
-use App\Console\Commands\CekKeterlambatan;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
@@ -27,6 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- Auth & Dashboard ---
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::put('/password', [AuthController::class, 'updatePassword']);
     Route::get('/dashboard', [DashboardController::class, 'index']);
 
     // --- Test Routes (Bisa dihapus kalau sudah tidak dipakai) ---
@@ -47,6 +49,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [KelasController::class, 'update'])->middleware('role:guru');
         Route::delete('/{id}', [KelasController::class, 'destroy'])->middleware('role:guru');
     });
+
+    // ==========================================
+    // USER ROUTES (Untuk Dropdown Wali Kelas, dll)
+    // ==========================================
+    Route::get('/users', function () {
+        $users = \App\Models\User::with('role')->get();
+        return response()->json([
+            'success' => true,
+            'message' => 'Data user berhasil diambil',
+            'data' => $users
+        ], 200);
+    })->middleware('role:guru'); // Hanya guru yang bisa lihat list semua user
 
     // ==========================================
     // SISWA ROUTES
@@ -92,7 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [TransaksiController::class, 'show'])->middleware('role:guru,bendahara');
         
         // Aksi
-        Route::post('/', [TransaksiController::class, 'store'])->middleware('role:siswa,bendahara');
+        Route::post('/', [TransaksiController::class, 'store'])->middleware('role:siswa,bendahara,guru');
         Route::put('/{id}', [TransaksiController::class, 'update'])->middleware('role:guru,bendahara');
         Route::put('/{id}/konfirmasi', [TransaksiController::class, 'konfirmasi'])->middleware('role:guru,bendahara');
         Route::delete('/{id}', [TransaksiController::class, 'destroy'])->middleware('role:guru');
@@ -132,19 +146,17 @@ Route::middleware('auth:sanctum')->group(function () {
         // Cek keterlambatan (custom route)
         Route::post('/cek', function () {
             try {
-                $command = new CekKeterlambatan();
-                $result = $command->handle();
+                // Panggil command lewat Artisan facade, ini cara paling aman & resmi
+                \Illuminate\Support\Facades\Artisan::call('keterlambatan:cek');
                 
                 return response()->json([
                     'success' => true,
                     'message' => 'Pengecekan keterlambatan berhasil dijalankan',
-                    'result' => $result
                 ]);
             } catch (\Exception $e) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal menjalankan pengecekan keterlambatan',
-                    'error' => $e->getMessage()
+                    'message' => 'Gagal menjalankan pengecekan keterlambatan: ' . $e->getMessage()
                 ], 500);
             }
         })->middleware('role:guru');
@@ -183,5 +195,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/siswa/{siswa_id}', [LaporanController::class, 'perSiswa']);
         Route::get('/kelas/{kelas_id}', [LaporanController::class, 'perKelas']);
     });
+
+    // ==========================================
+    // SETTINGS ROUTES
+    // ==========================================
+    Route::get('/settings', [SettingController::class, 'index']);
+    Route::put('/settings', [SettingController::class, 'update'])->middleware('role:guru');
 
 });
