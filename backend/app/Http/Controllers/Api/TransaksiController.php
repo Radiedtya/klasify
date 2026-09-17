@@ -25,7 +25,7 @@ class TransaksiController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Transaksi::with(['siswa.user', 'iuran.kelas', 'confirmedBy']);
+            $query = Transaksi::with(['siswa.user', 'iuran.kelas', 'confirmedBy.role']);
 
             // Filter by siswa
             if ($request->has('siswa_id')) {
