@@ -8,7 +8,7 @@
       </div>
 
       <nav class="nav-menu">
-        <router-link to="/dashboard" class="nav-item">
+        <router-link to="/bendahara/dashboard" class="nav-item">
           <i class="bi bi-grid-fill"></i>
           <span>Dashboard</span>
         </router-link>
@@ -206,10 +206,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios' // Pastikan axios sudah terinstall
 
 const router = useRouter()
+
+// Endpoint API
+const API_BASE_URL = 'http://localhost:8000/api/pengeluaran' // Sesuaikan dengan domain/port backend kamu
+
+// State Data & Loading
+const pengeluaranList = ref([])
+const isLoading = ref(false)
+const errorMessage = ref('')
 
 // Modal States
 const showAddModal = ref(false)
@@ -219,32 +228,159 @@ const showEditModal = ref(false)
 const searchQuery = ref('')
 const selectedStatus = ref('semua')
 
-// Data Dummy Pengeluaran
-const pengeluaranList = ref([
-  { id: 201, kategori: 'Pembelian Spidol & Penghapus', nominal: 25000, pengaju: 'Siti Nurhaliza', tanggal: '2026-05-01', status: 'Disetujui' },
-  { id: 202, kategori: 'Fotocopy Materi Pembelajaran', nominal: 15000, pengaju: 'Ani Rahayu', tanggal: '2026-05-03', status: 'Diproses' },
-  { id: 203, kategori: 'Sewa Konsumsi Acara Kelas', nominal: 150000, pengaju: 'Budi Santoso', tanggal: '2026-05-04', status: 'Ditolak' }
-])
-
 // Form States
 const form = reactive({
-  kategori: '',
-  nominal: 0,
-  pengaju: '',
+  kelas_id: 1, // Sesuaikan dengan kelas_id default atau dari context user login
+  judul: '',
+  deskripsi: '',
+  jumlah: 0,
   tanggal: new Date().toISOString().split('T')[0],
-  status: 'Diproses'
+  kategori: '',
+  bukti_foto: null
 })
 
 const editForm = reactive({
   id: null,
-  kategori: '',
-  nominal: 0,
-  pengaju: '',
+  judul: '',
+  deskripsi: '',
+  jumlah: 0,
   tanggal: '',
-  status: 'Diproses'
+  kategori: '',
+  bukti_foto: null
 })
 
-// Filter Logic
+// Header Config untuk Authorization Token
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token')
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+}
+
+// 1. Fetch Data dari Backend
+const fetchPengeluaran = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  try {
+    const response = await axios.get(API_BASE_URL, getAuthHeader())
+    
+    // Mapping response backend ke struktur yang dibutuhkan komponen
+    pengeluaranList.value = response.data.data.map(item => ({
+      id: item.id,
+      kategori: item.judul, // judul dijadikan kategori/nama pengeluaran di frontend
+      nominal: item.jumlah,
+      pengaju: item.created_by?.name || 'Sistem',
+      tanggal: item.tanggal,
+      status: mapStatusToFrontend(item.status),
+      deskripsi: item.deskripsi,
+      bukti_foto: item.bukti_foto
+    }))
+  } catch (error) {
+    if (error.response?.status === 401) {
+      handleLogout()
+    } else {
+      errorMessage.value = 'Gagal mengambil data pengeluaran dari server.'
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Helper mapping status backend ke penamaan frontend
+const mapStatusToFrontend = (status) => {
+  if (status === 'approved') return 'Disetujui'
+  if (status === 'pending') return 'Diproses'
+  if (status === 'rejected') return 'Ditolak'
+  return status
+}
+
+// 2. Tambah Pengeluaran (POST)
+const addPengeluaran = async () => {
+  try {
+    const formData = new FormData()
+    formData.append('kelas_id', form.kelas_id)
+    formData.append('judul', form.kategori)
+    formData.append('jumlah', form.nominal)
+    formData.append('tanggal', form.tanggal)
+    formData.append('deskripsi', form.deskripsi || '')
+    if (form.bukti_foto) {
+      formData.append('bukti_foto', form.bukti_foto)
+    }
+
+    await axios.post(API_BASE_URL, formData, {
+      headers: {
+        ...getAuthHeader().headers,
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+
+    await fetchPengeluaran() // Reload data
+    
+    // Reset Form
+    form.kategori = ''
+    form.nominal = 0
+    form.deskripsi = ''
+    form.bukti_foto = null
+    showAddModal.value = false
+  } catch (error) {
+    alert(error.response?.data?.message || 'Gagal menambahkan pengeluaran.')
+  }
+}
+
+// 3. Open Edit Modal
+const openEditModal = (item) => {
+  editForm.id = item.id
+  editForm.kategori = item.kategori
+  editForm.nominal = item.nominal
+  editForm.tanggal = item.tanggal
+  editForm.deskripsi = item.deskripsi || ''
+  showEditModal.value = true
+}
+
+// 4. Update Pengeluaran (PUT)
+const updatePengeluaran = async () => {
+  try {
+    const payload = {
+      judul: editForm.kategori,
+      jumlah: editForm.nominal,
+      tanggal: editForm.tanggal,
+      deskripsi: editForm.deskripsi
+    }
+
+    await axios.put(`${API_BASE_URL}/${editForm.id}`, payload, getAuthHeader())
+    
+    await fetchPengeluaran() // Reload data
+    showEditModal.value = false
+  } catch (error) {
+    alert(error.response?.data?.message || 'Gagal memperbarui pengeluaran.')
+  }
+}
+
+// 5. Hapus Pengeluaran (DELETE)
+const deletePengeluaran = async (id) => {
+  if (confirm('Yakin ingin menghapus pengajuan pengeluaran ini?')) {
+    try {
+      await axios.delete(`${API_BASE_URL}/${id}`, getAuthHeader())
+      await fetchPengeluaran() // Reload data
+    } catch (error) {
+      alert(error.response?.data?.message || 'Gagal menghapus pengeluaran.')
+    }
+  }
+}
+
+// Handling File Input
+const handleFileUpload = (event, type = 'add') => {
+  const file = event.target.files[0]
+  if (type === 'add') {
+    form.bukti_foto = file
+  } else {
+    editForm.bukti_foto = file
+  }
+}
+
+// Filter Logic (Client-side)
 const filteredPengeluaran = computed(() => {
   return pengeluaranList.value.filter(item => {
     const matchSearch = item.kategori.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
@@ -262,52 +398,16 @@ const getStatusClass = (status) => {
   return ''
 }
 
-// CRUD Actions
-const addPengeluaran = () => {
-  pengeluaranList.value.unshift({
-    id: Date.now(),
-    kategori: form.kategori,
-    nominal: form.nominal,
-    pengaju: form.pengaju,
-    tanggal: form.tanggal,
-    status: form.status
-  })
-
-  // Reset Form
-  form.kategori = ''
-  form.nominal = 0
-  form.pengaju = ''
-  showAddModal.value = false
-}
-
-const openEditModal = (item) => {
-  editForm.id = item.id
-  editForm.kategori = item.kategori
-  editForm.nominal = item.nominal
-  editForm.pengaju = item.pengaju
-  editForm.tanggal = item.tanggal
-  editForm.status = item.status
-  showEditModal.value = true
-}
-
-const updatePengeluaran = () => {
-  const index = pengeluaranList.value.findIndex(p => p.id === editForm.id)
-  if (index !== -1) {
-    pengeluaranList.value[index] = { ...editForm }
-  }
-  showEditModal.value = false
-}
-
-const deletePengeluaran = (id) => {
-  if (confirm('Yakin ingin menghapus pengajuan pengeluaran ini?')) {
-    pengeluaranList.value = pengeluaranList.value.filter(p => p.id !== id)
-  }
-}
-
+// Logout Action
 const handleLogout = () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+// Fetch data saat komponen di-mount
+onMounted(() => {
+  fetchPengeluaran()
+})
 </script>
 
 <style scoped>

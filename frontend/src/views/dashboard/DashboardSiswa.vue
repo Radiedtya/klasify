@@ -1,103 +1,134 @@
 <template>
-  <div class="dashboard-container">
-    <!-- Navbar / Header Top -->
-    <header class="top-bar">
-      <div class="user-info">
-        <h1>Dashboard Siswa</h1>
-        <p>Selamat datang kembali, <strong>{{ userProfile?.name || 'Siswa' }}</strong> 👋</p>
-      </div>
-      <button @click="handleLogout" class="btn-logout">
-        <span>Logout</span>
-      </button>
-    </header>
-
-    <div v-if="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Memuat data kas...</p>
-    </div>
-
-    <div v-else class="content-body">
-      <!-- Grid Ringkasan Statistik -->
-      <div class="stats-grid">
-        <div class="stat-card primary">
-          <div class="stat-icon">💰</div>
-          <div class="stat-detail">
-            <span class="label">Total Kas Kelas</span>
-            <h3 class="value">Rp {{ formatRupiah(summary.totalKas) }}</h3>
-          </div>
-        </div>
-
-        <div class="stat-card warning">
-          <div class="stat-icon">⚠️</div>
-          <div class="stat-detail">
-            <span class="label">Tunggakan Kamu</span>
-            <h3 class="value">Rp {{ formatRupiah(summary.tunggakan) }}</h3>
-          </div>
-        </div>
-
-        <div class="stat-card success">
-          <div class="stat-icon">✅</div>
-          <div class="stat-detail">
-            <span class="label">Total Terbayar</span>
-            <h3 class="value">Rp {{ formatRupiah(summary.totalTerbayar) }}</h3>
-          </div>
-        </div>
+  <div class="dashboard-wrapper">
+    <!-- Sidebar Khusus Role Siswa -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">K</div>
+        <span class="brand-text">Klasify</span>
       </div>
 
-      <!-- Main Layout: Riwayat Pembayaran & Informasi -->
-      <div class="main-grid">
-        <!-- Tabel Riwayat Transaksi Kamu -->
-        <div class="card table-card">
-          <div class="card-header">
-            <h3>Riwayat Pembayaran Kamu</h3>
+      <nav class="menu">
+        <router-link to="/siswa/dashboard" class="menu-item active">
+          <i class="bx bx-grid-alt"></i>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/siswa/iuran" class="menu-item">
+          <i class="bx bx-receipt"></i>
+          <span>Data Iuran</span>
+        </router-link>
+        <router-link to="/siswa/transaksi" class="menu-item">
+          <i class="bx bx-transfer-alt"></i>
+          <span>Transaksi</span>
+        </router-link>
+        <router-link to="/siswa/keterlambatan" class="menu-item">
+          <i class="bx bx-time-five"></i>
+          <span>Keterlambatan</span>
+        </router-link>
+        <router-link to="/siswa/notifikasi" class="menu-item">
+          <i class="bx bx-bell"></i>
+          <span>Notifikasi</span>
+        </router-link>
+        <router-link to="/siswa/profile" class="menu-item">
+          <i class="bx bx-user"></i>
+          <span>Profile</span>
+        </router-link>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button @click="logout" class="btn-logout">
+          <i class="bx bx-log-out"></i> Keluar
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div>
+          <h1 class="page-title">Dashboard Siswa</h1>
+          <p class="page-subtitle">Ringkasan statistik iuran dan tagihan kamu.</p>
+        </div>
+      </header>
+
+      <!-- Stats Cards (Statistik Tagihan & Denda Sendiri) -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="stat-label">Total Tagihan Aktif</span>
+            <h2 class="stat-value text-blue">{{ formatRupiah(stats.totalTagihan) }}</h2>
           </div>
-          <div class="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tanggal</th>
-                  <th>Keterangan / Minggu</th>
-                  <th>Nominal</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="transactions.length === 0">
-                  <td colspan="4" class="empty-row">Belum ada riwayat pembayaran.</td>
-                </tr>
-                <tr v-for="item in transactions" :key="item.id">
-                  <td>{{ formatDate(item.created_at) }}</td>
-                  <td>{{ item.keterangan || 'Iuran Kas' }}</td>
-                  <td class="font-bold">Rp {{ formatRupiah(item.nominal) }}</td>
-                  <td>
-                    <span class="badge" :class="item.status === 'lunas' ? 'badge-success' : 'badge-pending'">
-                      {{ item.status || 'Lunas' }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="stat-icon bg-blue">
+            <i class="bx bx-wallet"></i>
           </div>
         </div>
 
-        <!-- Sidebar / Widget Informasi -->
-        <div class="side-widgets">
-          <div class="card info-card">
-            <h3>Informasi Kas Kelas</h3>
-            <div class="info-list">
-              <div class="info-item">
-                <span class="info-label">Iuran Per Minggu</span>
-                <span class="info-val">Rp 5.000</span>
-              </div>
-              <div class="info-item">
-                <span class="info-label">Jadwal Penagihan</span>
-                <span class="info-val">Setiap Hari Jumat</span>
-              </div>
-            </div>
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="stat-label">Total Sudah Dibayar</span>
+            <h2 class="stat-value text-green">{{ formatRupiah(stats.totalLunas) }}</h2>
+          </div>
+          <div class="stat-icon bg-green">
+            <i class="bx bx-check-circle"></i>
           </div>
         </div>
-      </div>
-    </div>
+
+        <div class="stat-card">
+          <div class="stat-info">
+            <span class="stat-label">Total Denda</span>
+            <h2 class="stat-value text-amber">{{ formatRupiah(stats.totalDenda) }}</h2>
+          </div>
+          <div class="stat-icon bg-amber">
+            <i class="bx bx-error-circle"></i>
+          </div>
+        </div>
+      </section>
+
+      <!-- Banner Fitur Upload Bukti Bayar -->
+      <section class="banner-card">
+        <div class="banner-content">
+          <h3>Bayar Kas Lebih Cepat!</h3>
+          <p>Pastikan untuk mengunggah bukti bayar sebelum tanggal jatuh tempo agar tidak terkena denda keterlambatan.</p>
+        </div>
+        <router-link to="/siswa/transaksi" class="btn-upload">
+          <i class="bx bx-upload"></i> Upload Bukti Bayar
+        </router-link>
+      </section>
+
+      <!-- Riwayat Transaksi Milik Sendiri -->
+      <section class="table-card">
+        <h3 class="card-title">Riwayat Transaksi Saya</h3>
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>TANGGAL</th>
+                <th>KETERANGAN IURAN</th>
+                <th>JUMLAH</th>
+                <th>STATUS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="transaksiList.length === 0">
+                <td colspan="4" class="empty-state">
+                  Belum ada riwayat transaksi recorded.
+                </td>
+              </tr>
+              <tr v-for="item in transaksiList" :key="item.id" v-else>
+                <td>{{ item.tanggal }}</td>
+                <td>{{ item.keterangan }}</td>
+                <td class="font-semibold">{{ formatRupiah(item.jumlah) }}</td>
+                <td>
+                  <span :class="['badge', getStatusBadge(item.status)]">
+                    {{ item.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
   </div>
 </template>
 
@@ -107,276 +138,343 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
-const isLoading = ref(true)
-const userProfile = ref(null)
 
-const summary = ref({
-  totalKas: 0,
-  tunggakan: 0,
-  totalTerbayar: 0
+const stats = ref({
+  totalTagihan: 0,
+  totalLunas: 0,
+  totalDenda: 0
 })
 
-const transactions = ref([])
-const API_BASE_URL = 'http://localhost:8000/api'
+const transaksiList = ref([])
 
-// Helper Format Rupiah
-const formatRupiah = (val) => {
-  if (!val) return '0'
-  return Number(val).toLocaleString('id-ID')
+const formatRupiah = (number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0
+  }).format(number || 0)
 }
 
-// Helper Format Tanggal
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  return new Date(dateString).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric'
-  })
+const getStatusBadge = (status) => {
+  switch (status?.toLowerCase()) {
+    case 'approved':
+    case 'lunas':
+      return 'badge-success'
+    case 'pending':
+      return 'badge-warning'
+    case 'rejected':
+      return 'badge-danger'
+    default:
+      return 'badge-secondary'
+  }
 }
 
-onMounted(async () => {
-  const token = localStorage.getItem('token')
-
-  if (!token) {
-    router.push('/login')
-    return
-  }
-
+const fetchData = async () => {
   try {
-    const authHeader = { headers: { Authorization: `Bearer ${token}` } }
-
-    // 1. Ambil Data User Profil
-    const resUser = await axios.get(`${API_BASE_URL}/me`, authHeader)
-    const user = resUser.data.data || resUser.data
-    userProfile.value = user
-
-    // 2. Ambil Data Dashboard Siswa (Sesuaikan endpoint API milikmu jika berbeda)
-    try {
-      const resDashboard = await axios.get(`${API_BASE_URL}/siswa/dashboard`, authHeader)
-      const data = resDashboard.data.data || resDashboard.data
-      
-      summary.value.totalKas = data.total_kas || 0
-      summary.value.tunggakan = data.tunggakan || 0
-      summary.value.totalTerbayar = data.total_terbayar || 0
-      transactions.value = data.riwayat || []
-    } catch (err) {
-      console.warn("API /siswa/dashboard belum siap, menggunakan data default")
-    }
-
-  } catch (error) {
-    console.error("Auth Error:", error)
-    localStorage.clear()
-    router.push('/login')
-  } finally {
-    isLoading.value = false
-  }
-})
-
-const handleLogout = async () => {
-  const token = localStorage.getItem('token')
-  try {
-    await axios.post(`${API_BASE_URL}/logout`, {}, {
+    const token = localStorage.getItem('token')
+    const res = await axios.get('/api/siswa/dashboard-stats', {
       headers: { Authorization: `Bearer ${token}` }
     })
+    if (res.data) {
+      stats.value = res.data.stats || stats.value
+      transaksiList.value = res.data.transaksi || []
+    }
   } catch (err) {
-    // Abaikan error logout backend
-  } finally {
-    localStorage.clear()
-    router.push('/login')
+    console.error('Error fetching dashboard data:', err)
   }
 }
+
+const logout = () => {
+  localStorage.removeItem('token')
+  router.push('/login')
+}
+
+onMounted(fetchData)
 </script>
 
 <style scoped>
-.dashboard-container {
-  min-height: 100vh;
-  background-color: #f8fafc;
-  padding: 32px;
-  color: #0f172a;
-}
+@import url('https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css');
 
-.top-bar {
+.dashboard-wrapper {
   display: flex;
-  justify-content: space-between;
+  min-height: 100vh;
+  background-color: #f4f6f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #333;
+}
+
+/* Sidebar Styling */
+.sidebar {
+  width: 240px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem 1rem;
+}
+
+.brand {
+  display: flex;
   align-items: center;
-  margin-bottom: 32px;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.user-info h1 {
-  font-size: 24px;
-  font-weight: 800;
-  margin: 0;
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
 }
 
-.user-info p {
-  font-size: 14px;
+.brand-text {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #1e293b;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
   color: #64748b;
-  margin-top: 4px;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.menu-item i {
+  font-size: 1.25rem;
+}
+
+.menu-item:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.menu-item.active {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.sidebar-footer {
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
 }
 
 .btn-logout {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  border-radius: 8px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
-.btn-logout:hover {
-  background: #dc2626;
+/* Main Content Styling */
+.main-content {
+  flex: 1;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.loading-state {
-  text-align: center;
-  padding: 60px 0;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
   color: #64748b;
+  margin-top: 0.25rem;
 }
 
 /* Stats Cards */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
 }
 
 .stat-card {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 0.35rem;
 }
 
 .stat-icon {
-  font-size: 28px;
-  background: #f1f5f9;
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.35rem;
+}
+
+.bg-blue { background: #eff6ff; }
+.text-blue { color: #2563eb; }
+.bg-green { background: #f0fdf4; }
+.text-green { color: #16a34a; }
+.bg-amber { background: #fffbeb; }
+.text-amber { color: #d97706; }
+
+.font-semibold { font-weight: 600; }
+
+/* Banner Styling */
+.banner-card {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white;
+  padding: 1.25rem 1.5rem;
   border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
 }
 
-.stat-detail .label {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.stat-detail .value {
-  font-size: 20px;
+.banner-content h3 {
+  margin: 0;
+  font-size: 1.1rem;
   font-weight: 700;
-  margin-top: 4px;
 }
 
-/* Main Grid & Cards */
-.main-grid {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 24px;
+.banner-content p {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85rem;
+  color: #bfdbfe;
 }
 
-@media (max-width: 900px) {
-  .main-grid {
-    grid-template-columns: 1fr;
-  }
+.btn-upload {
+  background: #f59e0b;
+  color: #ffffff;
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  transition: background 0.2s;
 }
 
-.card {
+.btn-upload:hover {
+  background: #d97706;
+}
+
+/* Table Section */
+.table-card {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid #e2e8f0;
-  padding: 24px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.card-header h3, .info-card h3 {
-  font-size: 18px;
+.card-title {
+  font-size: 1rem;
   font-weight: 700;
-  margin-bottom: 16px;
+  color: #0f172a;
+  margin-bottom: 1rem;
 }
 
-/* Table Styling */
 .table-responsive {
+  width: 100%;
   overflow-x: auto;
 }
 
-table {
+.data-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
 }
 
-th, td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 14px;
-}
-
-th {
+.data-table th {
+  background: #f8fafc;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: #64748b;
-  font-weight: 600;
-  font-size: 12px;
-  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.font-bold {
-  font-weight: 600;
+.data-table td {
+  padding: 0.875rem 1rem;
+  font-size: 0.875rem;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.empty-row {
+.empty-state {
   text-align: center;
+  padding: 2rem !important;
   color: #94a3b8;
-  padding: 24px 0;
+  font-size: 0.875rem;
 }
 
+/* Badges */
 .badge {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
+  text-transform: capitalize;
 }
 
-.badge-success {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.badge-pending {
-  background: #fef9c3;
-  color: #854d0e;
-}
-
-/* Info Widget */
-.info-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 14px;
-}
-
-.info-label {
-  color: #64748b;
-}
-
-.info-val {
-  font-weight: 600;
-  color: #0f172a;
-}
+.badge-success { background: #dcfce7; color: #15803d; }
+.badge-warning { background: #fef3c7; color: #b45309; }
+.badge-danger { background: #fee2e2; color: #b91c1c; }
+.badge-secondary { background: #f1f5f9; color: #475569; }
 </style>

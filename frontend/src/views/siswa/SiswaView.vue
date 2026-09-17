@@ -8,41 +8,34 @@
       </div>
 
       <nav class="nav-menu">
-        <router-link to="/dashboard" class="nav-item active">
-    <i class="bi bi-grid-fill"></i>
-    <span>Dashboard</span>
-  </router-link>
-  
-  <!-- UBAH DI SINI -->
-  <router-link to="/siswa" class="nav-item">
-    <i class="bi bi-people-fill"></i>
-    <span>Siswa</span>
-  </router-link>
-
-  <router-link to="/iuran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Iuran</span>
-  </router-link>
-
-  <router-link to="/kelas" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Kelas</span>
-  </router-link>
-
-  <router-link to="/transaksi" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Transaksi</span>
-  </router-link>
-
-  <router-link to="/pengeluaran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Pengeluaran</span>
-  </router-link>
-
-  <router-link to="/laporan" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Laporan</span>
-  </router-link>
+        <router-link to="/bendahara/dashboard" class="nav-item">
+          <i class="bi bi-grid-fill"></i>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/siswa" class="nav-item active">
+          <i class="bi bi-people-fill"></i>
+          <span>Siswa</span>
+        </router-link>
+        <router-link to="/iuran" class="nav-item">
+          <i class="bi bi-wallet2"></i>
+          <span>Iuran</span>
+        </router-link>
+        <router-link to="/kelas" class="nav-item">
+          <i class="bi bi-easel-fill"></i>
+          <span>Kelas</span>
+        </router-link>
+        <router-link to="/transaksi" class="nav-item">
+          <i class="bi bi-receipt"></i>
+          <span>Transaksi</span>
+        </router-link>
+        <router-link to="/pengeluaran" class="nav-item">
+          <i class="bi bi-bag-dash-fill"></i>
+          <span>Pengeluaran</span>
+        </router-link>
+        <router-link to="/laporan" class="nav-item">
+          <i class="bi bi-file-earmark-bar-graph-fill"></i>
+          <span>Laporan</span>
+        </router-link>
       </nav>
 
       <button @click="handleLogout" class="btn-logout">
@@ -56,9 +49,9 @@
       <header class="topbar">
         <div>
           <h1>Kelola Data Siswa</h1>
-          <p>Kelola data siswa dan status pembayaran iuran kas kelas.</p>
+          <p>Kelola data siswa dan akun pengguna terkait.</p>
         </div>
-        <button @click="showAddModal = true" class="btn-add">
+        <button @click="openAddModal" class="btn-add">
           + Tambah Siswa
         </button>
       </header>
@@ -70,26 +63,27 @@
             <input 
               type="text" 
               v-model="searchQuery" 
-              placeholder="Cari nama siswa..." 
+              placeholder="Cari nama atau NIS..." 
+              @input="fetchSiswa"
             />
           </div>
 
-          <!-- Filter Tab -->
+          <!-- Filter Status Aktif User -->
           <div class="table-tabs">
             <button 
-              :class="['tab-btn', activeTab === 'semua' ? 'active' : '']" 
-              @click="activeTab = 'semua'">
+              :class="['tab-btn', activeTab === '' ? 'active' : '']" 
+              @click="setTab('')">
               Semua ({{ siswaList.length }})
             </button>
             <button 
-              :class="['tab-btn', activeTab === 'lunas' ? 'active' : '']" 
-              @click="activeTab = 'lunas'">
-              Sudah Bayar
+              :class="['tab-btn', activeTab === '1' ? 'active' : '']" 
+              @click="setTab('1')">
+              Aktif
             </button>
             <button 
-              :class="['tab-btn', activeTab === 'belum' ? 'active' : '']" 
-              @click="activeTab = 'belum'">
-              Belum Bayar
+              :class="['tab-btn', activeTab === '0' ? 'active' : '']" 
+              @click="setTab('0')">
+              Nonaktif
             </button>
           </div>
         </div>
@@ -97,34 +91,48 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>NIS / NISN</th>
               <th>Nama Siswa</th>
               <th>Kelas</th>
-              <th>Kontak</th>
-              <th>Status Iuran</th>
+              <th>Email / No. HP</th>
+              <th>Status Account</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="siswa in filteredSiswa" :key="siswa.id">
-              <td>#{{ siswa.id }}</td>
-              <td><strong>{{ siswa.nama }}</strong></td>
-              <td>{{ siswa.kelas }}</td>
-              <td>{{ siswa.kontak || '-' }}</td>
+            <tr v-if="loading">
+              <td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">
+                Memuat data dari server...
+              </td>
+            </tr>
+            <tr v-else v-for="siswa in siswaList" :key="siswa.id">
               <td>
-                <span :class="['badge', siswa.status_kas === 'lunas' ? 'sudah' : 'belum']">
-                  {{ siswa.status_kas === 'lunas' ? 'Sudah Bayar' : 'Belum Bayar' }}
+                <strong>{{ siswa.nis }}</strong>
+                <div style="font-size: 11px; color: #94a3b8;">NISN: {{ siswa.nisn || '-' }}</div>
+              </td>
+              <td>
+                <strong>{{ siswa.user?.name || '-' }}</strong>
+                <div style="font-size: 11px; color: #64748b;">Ortu: {{ siswa.nama_ortu || '-' }}</div>
+              </td>
+              <td>{{ siswa.kelas?.nama_kelas || `Kelas #${siswa.kelas_id}` }}</td>
+              <td>
+                <div>{{ siswa.user?.email || '-' }}</div>
+                <div style="font-size: 11px; color: #64748b;">{{ siswa.user?.no_hp || '-' }}</div>
+              </td>
+              <td>
+                <span :class="['badge', siswa.user?.is_active ? 'sudah' : 'belum']">
+                  {{ siswa.user?.is_active ? 'Aktif' : 'Nonaktif' }}
                 </span>
               </td>
               <td>
                 <div class="action-buttons">
-                  <button @click="openDetailModal(siswa)" class="btn-show" title="Detail">Lihat</button>
+                  <button @click="openDetailModal(siswa.id)" class="btn-show" title="Detail">Lihat</button>
                   <button @click="openEditModal(siswa)" class="btn-edit" title="Edit">Edit</button>
                   <button @click="deleteSiswa(siswa.id)" class="btn-delete" title="Hapus">Hapus</button>
                 </div>
               </td>
             </tr>
-            <tr v-if="filteredSiswa.length === 0">
+            <tr v-if="!loading && siswaList.length === 0">
               <td colspan="6" style="text-align: center; color: #94a3b8; padding: 20px;">
                 Data siswa tidak ditemukan.
               </td>
@@ -136,39 +144,74 @@
 
     <!-- MODAL CREATE -->
     <div v-if="showAddModal" class="modal-overlay">
-      <div class="modal-card">
+      <div class="modal-card modal-large">
         <h3>Tambah Siswa Baru</h3>
         <form @submit.prevent="addSiswa">
-          <div class="form-group">
-            <label>Nama Lengkap</label>
-            <input type="text" v-model="form.nama" placeholder="Contoh: Rangga Pratama" required />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nama Lengkap *</label>
+              <input type="text" v-model="form.name" placeholder="Rangga Pratama" required />
+            </div>
+
+            <div class="form-group">
+              <label>Email (Login) *</label>
+              <input type="email" v-model="form.email" placeholder="rangga@example.com" required />
+            </div>
+
+            <div class="form-group">
+              <label>Password *</label>
+              <input type="password" v-model="form.password" placeholder="Minimal 8 karakter" required />
+            </div>
+
+            <div class="form-group">
+              <label>Kelas ID *</label>
+              <input type="number" v-model="form.kelas_id" placeholder="ID Kelas (contoh: 1)" required />
+            </div>
+
+            <div class="form-group">
+              <label>NIS *</label>
+              <input type="text" v-model="form.nis" placeholder="12345" required />
+            </div>
+
+            <div class="form-group">
+              <label>NISN</label>
+              <input type="text" v-model="form.nisn" placeholder="00123456" />
+            </div>
+
+            <div class="form-group">
+              <label>No. HP Siswa</label>
+              <input type="text" v-model="form.no_hp" placeholder="08123456789" />
+            </div>
+
+            <div class="form-group">
+              <label>Nama Orang Tua</label>
+              <input type="text" v-model="form.nama_ortu" placeholder="Nama wali/ortu" />
+            </div>
+
+            <div class="form-group">
+              <label>No. HP Orang Tua</label>
+              <input type="text" v-model="form.no_hp_ortu" placeholder="08987654321" />
+            </div>
+
+            <div class="form-group">
+              <label>Status Akun</label>
+              <select v-model="form.is_active">
+                <option :value="true">Aktif</option>
+                <option :value="false">Nonaktif</option>
+              </select>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Kelas</label>
-            <select v-model="form.kelas" required>
-              <option value="XII RPL 1">XII RPL 1</option>
-              <option value="XII RPL 2">XII RPL 2</option>
-              <option value="XII TKJ 1">XII TKJ 1</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Kontak / No. HP</label>
-            <input type="text" v-model="form.kontak" placeholder="081234567890" />
-          </div>
-
-          <div class="form-group">
-            <label>Status Iuran Kas</label>
-            <select v-model="form.status_kas" required>
-              <option value="lunas">Sudah Bayar (Lunas)</option>
-              <option value="belum">Belum Bayar</option>
-            </select>
+          <div class="form-group" style="margin-top: 10px;">
+            <label>Alamat</label>
+            <textarea v-model="form.alamat" rows="2" placeholder="Alamat lengkap"></textarea>
           </div>
 
           <div class="modal-actions">
             <button type="button" @click="showAddModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan</button>
+            <button type="submit" class="btn-submit" :disabled="submitting">
+              {{ submitting ? 'Menyimpan...' : 'Simpan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -180,28 +223,47 @@
         <h3>Detail Data Siswa</h3>
         <div class="detail-container" v-if="selectedDetail">
           <div class="detail-item">
-            <span class="detail-label">ID Siswa</span>
-            <span class="detail-value">#{{ selectedDetail.id }}</span>
+            <span class="detail-label">NIS / NISN</span>
+            <span class="detail-value">{{ selectedDetail.nis }} / {{ selectedDetail.nisn || '-' }}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Nama Lengkap</span>
-            <span class="detail-value">{{ selectedDetail.nama }}</span>
+            <span class="detail-value">{{ selectedDetail.user?.name || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Email</span>
+            <span class="detail-value">{{ selectedDetail.user?.email || '-' }}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Kelas</span>
-            <span class="detail-value">{{ selectedDetail.kelas }}</span>
+            <span class="detail-value">{{ selectedDetail.kelas?.nama_kelas || selectedDetail.kelas_id }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Kontak</span>
-            <span class="detail-value">{{ selectedDetail.kontak || '-' }}</span>
+            <span class="detail-label">No. HP</span>
+            <span class="detail-value">{{ selectedDetail.user?.no_hp || '-' }}</span>
           </div>
           <div class="detail-item">
-            <span class="detail-label">Status Iuran</span>
-            <span :class="['badge', selectedDetail.status_kas === 'lunas' ? 'sudah' : 'belum']">
-              {{ selectedDetail.status_kas === 'lunas' ? 'Sudah Bayar' : 'Belum Bayar' }}
+            <span class="detail-label">Tempat, Tgl Lahir</span>
+            <span class="detail-value">
+              {{ selectedDetail.tempat_lahir || '-' }}, {{ selectedDetail.tanggal_lahir || '-' }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Orang Tua / Wali</span>
+            <span class="detail-value">{{ selectedDetail.nama_ortu || '-' }} ({{ selectedDetail.no_hp_ortu || '-' }})</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Alamat</span>
+            <span class="detail-value">{{ selectedDetail.alamat || '-' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Status Akun</span>
+            <span :class="['badge', selectedDetail.user?.is_active ? 'sudah' : 'belum']">
+              {{ selectedDetail.user?.is_active ? 'Aktif' : 'Nonaktif' }}
             </span>
           </div>
         </div>
+        <div v-else style="text-align: center; padding: 10px;">Mengambil data...</div>
 
         <div class="modal-actions">
           <button type="button" @click="showDetailModal = false" class="btn-cancel">Tutup</button>
@@ -211,39 +273,74 @@
 
     <!-- MODAL EDIT (UPDATE) -->
     <div v-if="showEditModal" class="modal-overlay">
-      <div class="modal-card">
+      <div class="modal-card modal-large">
         <h3>Edit Data Siswa</h3>
         <form @submit.prevent="updateSiswa">
-          <div class="form-group">
-            <label>Nama Lengkap</label>
-            <input type="text" v-model="editForm.nama" required />
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nama Lengkap</label>
+              <input type="text" v-model="editForm.name" />
+            </div>
+
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" v-model="editForm.email" />
+            </div>
+
+            <div class="form-group">
+              <label>Password (Kosongkan jika tak diubah)</label>
+              <input type="password" v-model="editForm.password" placeholder="********" />
+            </div>
+
+            <div class="form-group">
+              <label>Kelas ID</label>
+              <input type="number" v-model="editForm.kelas_id" />
+            </div>
+
+            <div class="form-group">
+              <label>NIS</label>
+              <input type="text" v-model="editForm.nis" />
+            </div>
+
+            <div class="form-group">
+              <label>NISN</label>
+              <input type="text" v-model="editForm.nisn" />
+            </div>
+
+            <div class="form-group">
+              <label>No. HP Siswa</label>
+              <input type="text" v-model="editForm.no_hp" />
+            </div>
+
+            <div class="form-group">
+              <label>Nama Orang Tua</label>
+              <input type="text" v-model="editForm.nama_ortu" />
+            </div>
+
+            <div class="form-group">
+              <label>No. HP Orang Tua</label>
+              <input type="text" v-model="editForm.no_hp_ortu" />
+            </div>
+
+            <div class="form-group">
+              <label>Status Akun</label>
+              <select v-model="editForm.is_active">
+                <option :value="true">Aktif</option>
+                <option :value="false">Nonaktif</option>
+              </select>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label>Kelas</label>
-            <select v-model="editForm.kelas" required>
-              <option value="XII RPL 1">XII RPL 1</option>
-              <option value="XII RPL 2">XII RPL 2</option>
-              <option value="XII TKJ 1">XII TKJ 1</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Kontak / No. HP</label>
-            <input type="text" v-model="editForm.kontak" />
-          </div>
-
-          <div class="form-group">
-            <label>Status Iuran Kas</label>
-            <select v-model="editForm.status_kas" required>
-              <option value="lunas">Sudah Bayar (Lunas)</option>
-              <option value="belum">Belum Bayar</option>
-            </select>
+          <div class="form-group" style="margin-top: 10px;">
+            <label>Alamat</label>
+            <textarea v-model="editForm.alamat" rows="2"></textarea>
           </div>
 
           <div class="modal-actions">
             <button type="button" @click="showEditModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan Perubahan</button>
+            <button type="submit" class="btn-submit" :disabled="submitting">
+              {{ submitting ? 'Menyimpan...' : 'Simpan Perubahan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -253,10 +350,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
+
+// State Data API
+const siswaList = ref([])
+const loading = ref(false)
+const submitting = ref(false)
 
 // Modal states
 const showAddModal = ref(false)
@@ -266,86 +369,147 @@ const selectedDetail = ref(null)
 
 // Search & Filter State
 const searchQuery = ref('')
-const activeTab = ref('semua')
+const activeTab = ref('') // '' = semua, '1' = aktif, '0' = nonaktif
 
-// Data Dummy Siswa
-const siswaList = ref([
-  { id: 101, nama: 'Siti Nurhaliza', kelas: 'XII RPL 1', kontak: '081298765432', status_kas: 'lunas' },
-  { id: 102, nama: 'Rangga Pratama', kelas: 'XII RPL 1', kontak: '085711223344', status_kas: 'belum' },
-  { id: 103, nama: 'Ani Rahayu', kelas: 'XII RPL 1', kontak: '089655443322', status_kas: 'lunas' }
-])
-
-// Form State
+// Form State (Store)
 const form = reactive({
-  nama: '',
-  kelas: 'XII RPL 1',
-  kontak: '',
-  status_kas: 'belum'
+  name: '',
+  email: '',
+  password: '',
+  kelas_id: '',
+  nis: '',
+  nisn: '',
+  no_hp: '',
+  nama_ortu: '',
+  no_hp_ortu: '',
+  alamat: '',
+  is_active: true
 })
 
+// Form State (Update)
 const editForm = reactive({
   id: null,
-  nama: '',
-  kelas: 'XII RPL 1',
-  kontak: '',
-  status_kas: 'belum'
+  name: '',
+  email: '',
+  password: '',
+  kelas_id: '',
+  nis: '',
+  nisn: '',
+  no_hp: '',
+  nama_ortu: '',
+  no_hp_ortu: '',
+  alamat: '',
+  is_active: true
 })
 
-// Filter Logic
-const filteredSiswa = computed(() => {
-  return siswaList.value.filter(siswa => {
-    const matchName = siswa.nama.toLowerCase().includes(searchQuery.value.toLowerCase())
-    if (activeTab.value === 'lunas') return matchName && siswa.status_kas === 'lunas'
-    if (activeTab.value === 'belum') return matchName && siswa.status_kas === 'belum'
-    return matchName
-  })
-})
+// HTTP API: Fetch All Siswa
+const fetchSiswa = async () => {
+  loading.value = true
+  try {
+    const params = {}
+    if (searchQuery.value) params.search = searchQuery.value
+    if (activeTab.value !== '') params.is_active = activeTab.value
 
-// CRUD Functions
-const addSiswa = () => {
-  siswaList.value.unshift({
-    id: Date.now(),
-    nama: form.nama,
-    kelas: form.kelas,
-    kontak: form.kontak,
-    status_kas: form.status_kas
-  })
+    const res = await axios.get('/api/siswa', { params })
+    if (res.data.success) {
+      siswaList.value = res.data.data
+    }
+  } catch (err) {
+    console.error('Gagal mengambil data siswa:', err)
+  } finally {
+    loading.value = false
+  }
+}
 
+const setTab = (status) => {
+  activeTab.value = status
+  fetchSiswa()
+}
+
+// HTTP API: Store Siswa
+const openAddModal = () => {
   // Reset Form
-  form.nama = ''
-  form.kontak = ''
-  form.status_kas = 'belum'
-  showAddModal.value = false
+  Object.assign(form, {
+    name: '', email: '', password: '', kelas_id: '',
+    nis: '', nisn: '', no_hp: '', nama_ortu: '',
+    no_hp_ortu: '', alamat: '', is_active: true
+  })
+  showAddModal.value = true
 }
 
-const openDetailModal = (siswa) => {
-  selectedDetail.value = siswa
+const addSiswa = async () => {
+  submitting.value = true
+  try {
+    const res = await axios.post('/api/siswa', form)
+    alert(res.data.message || 'Siswa berhasil ditambahkan!')
+    showAddModal.value = false
+    fetchSiswa()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal menambahkan siswa')
+  } finally {
+    submitting.value = false
+  }
+}
+
+// HTTP API: Show Detail Siswa
+const openDetailModal = async (id) => {
+  selectedDetail.value = null
   showDetailModal.value = true
+  try {
+    const res = await axios.get(`/api/siswa/${id}`)
+    if (res.data.success) {
+      selectedDetail.value = res.data.data
+    }
+  } catch (err) {
+    alert('Gagal mengambil detail siswa')
+    showDetailModal.value = false
+  }
 }
 
+// HTTP API: Edit & Update Siswa
 const openEditModal = (siswa) => {
   editForm.id = siswa.id
-  editForm.nama = siswa.nama
-  editForm.kelas = siswa.kelas
-  editForm.kontak = siswa.kontak
-  editForm.status_kas = siswa.status_kas
+  editForm.name = siswa.user?.name || ''
+  editForm.email = siswa.user?.email || ''
+  editForm.password = ''
+  editForm.kelas_id = siswa.kelas_id
+  editForm.nis = siswa.nis
+  editForm.nisn = siswa.nisn || ''
+  editForm.no_hp = siswa.user?.no_hp || ''
+  editForm.nama_ortu = siswa.nama_ortu || ''
+  editForm.no_hp_ortu = siswa.no_hp_ortu || ''
+  editForm.alamat = siswa.alamat || ''
+  editForm.is_active = Boolean(siswa.user?.is_active)
+  
   showEditModal.value = true
 }
 
-const updateSiswa = () => {
-  const index = siswaList.value.findIndex(s => s.id === editForm.id)
-  if (index !== -1) {
-    siswaList.value[index].nama = editForm.nama
-    siswaList.value[index].kelas = editForm.kelas
-    siswaList.value[index].kontak = editForm.kontak
-    siswaList.value[index].status_kas = editForm.status_kas
+const updateSiswa = async () => {
+  submitting.value = true
+  try {
+    const payload = { ...editForm }
+    if (!payload.password) delete payload.password // Jangan kirim jika kosong
+
+    const res = await axios.put(`/api/siswa/${editForm.id}`, payload)
+    alert(res.data.message || 'Data siswa berhasil diperbarui!')
+    showEditModal.value = false
+    fetchSiswa()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal memperbarui data')
+  } finally {
+    submitting.value = false
   }
-  showEditModal.value = false
 }
 
-const deleteSiswa = (id) => {
-  if (confirm('Yakin ingin menghapus data siswa ini?')) {
-    siswaList.value = siswaList.value.filter(s => s.id !== id)
+// HTTP API: Delete Siswa
+const deleteSiswa = async (id) => {
+  if (!confirm('Yakin ingin menghapus data siswa ini?')) return
+  try {
+    const res = await axios.delete(`/api/siswa/${id}`)
+    alert(res.data.message || 'Siswa berhasil dihapus')
+    fetchSiswa()
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal menghapus siswa')
   }
 }
 
@@ -353,6 +517,10 @@ const handleLogout = () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+onMounted(() => {
+  fetchSiswa()
+})
 </script>
 
 <style scoped>
@@ -586,7 +754,7 @@ const handleLogout = () => {
   background-color: #f8fafc;
 }
 
-/* Badge Status Iuran */
+/* Badge Status */
 .badge {
   padding: 4px 10px;
   border-radius: 20px;
@@ -654,6 +822,12 @@ const handleLogout = () => {
   width: 100%;
   max-width: 440px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-card.modal-large {
+  max-width: 650px;
 }
 
 .modal-card h3 {
@@ -663,8 +837,13 @@ const handleLogout = () => {
   color: #0f172a;
 }
 
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
 .form-group {
-  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -676,15 +855,16 @@ const handleLogout = () => {
   color: #475569;
 }
 
-.form-group input, .form-group select {
+.form-group input, .form-group select, .form-group textarea {
   padding: 10px 14px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   font-size: 14px;
   outline: none;
+  font-family: inherit;
 }
 
-.form-group input:focus, .form-group select:focus {
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
   border-color: #3b82f6;
 }
 

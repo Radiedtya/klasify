@@ -8,41 +8,34 @@
       </div>
 
       <nav class="nav-menu">
-        <router-link to="/dashboard" class="nav-item active">
-    <i class="bi bi-grid-fill"></i>
-    <span>Dashboard</span>
-  </router-link>
-  
-  <!-- UBAH DI SINI -->
-  <router-link to="/siswa" class="nav-item">
-    <i class="bi bi-people-fill"></i>
-    <span>Siswa</span>
-  </router-link>
-
-  <router-link to="/iuran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Iuran</span>
-  </router-link>
-
-  <router-link to="/kelas" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Kelas</span>
-  </router-link>
-
-  <router-link to="/transaksi" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Transaksi</span>
-  </router-link>
-
-  <router-link to="/pengeluaran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Pengeluaran</span>
-  </router-link>
-
-  <router-link to="/laporan" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Laporan</span>
-  </router-link>
+        <router-link to="/bendahara/dashboard" class="nav-item">
+          <i class="bi bi-grid-fill"></i>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/siswa" class="nav-item">
+          <i class="bi bi-people-fill"></i>
+          <span>Siswa</span>
+        </router-link>
+        <router-link to="/iuran" class="nav-item active">
+          <i class="bi bi-wallet2"></i>
+          <span>Iuran</span>
+        </router-link>
+        <router-link to="/kelas" class="nav-item">
+          <i class="bi bi-easel-fill"></i>
+          <span>Kelas</span>
+        </router-link>
+        <router-link to="/transaksi" class="nav-item">
+          <i class="bi bi-receipt"></i>
+          <span>Transaksi</span>
+        </router-link>
+        <router-link to="/pengeluaran" class="nav-item">
+          <i class="bi bi-bag-dash-fill"></i>
+          <span>Pengeluaran</span>
+        </router-link>
+        <router-link to="/laporan" class="nav-item">
+          <i class="bi bi-file-earmark-bar-graph-fill"></i>
+          <span>Laporan</span>
+        </router-link>
       </nav>
 
       <button @click="handleLogout" class="btn-logout">
@@ -77,9 +70,9 @@
           <div class="filter-wrapper">
             <select v-model="selectedKelas" class="select-chip">
               <option value="semua">Semua Kelas</option>
-              <option value="XII RPL 1">XII RPL 1</option>
-              <option value="XII RPL 2">XII RPL 2</option>
-              <option value="XII TKJ 1">XII TKJ 1</option>
+              <option v-for="k in kelasList" :key="k.id" :value="k.nama_kelas">
+                {{ k.nama_kelas }}
+              </option>
             </select>
           </div>
         </div>
@@ -102,7 +95,7 @@
               <td><strong>{{ item.nama }}</strong></td>
               <td>{{ item.kelas }}</td>
               <td>{{ item.bulan }}</td>
-              <td>Rp {{ item.nominal.toLocaleString('id-ID') }}</td>
+              <td>Rp {{ Number(item.nominal).toLocaleString('id-ID') }}</td>
               <td>
                 <span :class="['badge', item.status === 'Lunas' ? 'sudah' : 'belum']">
                   {{ item.status }}
@@ -138,9 +131,9 @@
           <div class="form-group">
             <label>Kelas</label>
             <select v-model="form.kelas" required>
-              <option value="XII RPL 1">XII RPL 1</option>
-              <option value="XII RPL 2">XII RPL 2</option>
-              <option value="XII TKJ 1">XII TKJ 1</option>
+              <option v-for="k in kelasList" :key="k.id" :value="k.nama_kelas">
+                {{ k.nama_kelas }}
+              </option>
             </select>
           </div>
 
@@ -170,7 +163,9 @@
 
           <div class="modal-actions">
             <button type="button" @click="showAddModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan</button>
+            <button type="submit" class="btn-submit" :disabled="isLoading">
+              {{ isLoading ? 'Menyimpan...' : 'Simpan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -189,9 +184,9 @@
           <div class="form-group">
             <label>Kelas</label>
             <select v-model="editForm.kelas" required>
-              <option value="XII RPL 1">XII RPL 1</option>
-              <option value="XII RPL 2">XII RPL 2</option>
-              <option value="XII TKJ 1">XII TKJ 1</option>
+              <option v-for="k in kelasList" :key="k.id" :value="k.nama_kelas">
+                {{ k.nama_kelas }}
+              </option>
             </select>
           </div>
 
@@ -221,7 +216,9 @@
 
           <div class="modal-actions">
             <button type="button" @click="showEditModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan Perubahan</button>
+            <button type="submit" class="btn-submit" :disabled="isLoading">
+              {{ isLoading ? 'Memperbarui...' : 'Simpan Perubahan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -231,25 +228,42 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
+
+// Konfigurasi Axios Client
+const api = axios.create({
+  baseURL: 'http://localhost:8000/api',
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  }
+})
+
+// Interceptor untuk menambahkan Bearer Token jika ada
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
 
 // Modal States
 const showAddModal = ref(false)
 const showEditModal = ref(false)
+const isLoading = ref(false)
 
 // Search & Filter State
 const searchQuery = ref('')
 const selectedKelas = ref('semua')
 
-// Data Dummy Iuran
-const iuranList = ref([
-  { id: 1, nama: 'Siti Nurhaliza', kelas: 'XII RPL 1', bulan: 'Mei 2026', nominal: 20000, status: 'Lunas' },
-  { id: 2, nama: 'Rangga Pratama', kelas: 'XII RPL 1', bulan: 'Mei 2026', nominal: 20000, status: 'Belum Lunas' },
-  { id: 3, nama: 'Ani Rahayu', kelas: 'XII RPL 2', bulan: 'Mei 2026', nominal: 20000, status: 'Lunas' }
-])
+// Reactive Collections
+const iuranList = ref([])
+const kelasList = ref([])
 
 // Form States
 const form = reactive({
@@ -269,29 +283,65 @@ const editForm = reactive({
   status: 'Lunas'
 })
 
+// Fetch Data Iuran dari API
+const fetchIuran = async () => {
+  try {
+    const response = await api.get('/iuran')
+    // Mengakomodasi format response: { success: true, data: [...] } atau array langsung
+    const data = response.data.data || response.data
+    
+    // Normalisasi struktur data dari backend ke properti frontend
+    iuranList.value = data.map(item => ({
+      id: item.id,
+      nama: item.nama || item.siswa?.nama_siswa || item.nama_siswa || '-',
+      kelas: item.kelas || item.kelas?.nama_kelas || item.nama_kelas || '-',
+      bulan: item.bulan || '-',
+      nominal: item.nominal || 0,
+      status: item.status || (item.is_active ? 'Lunas' : 'Belum Lunas')
+    }))
+  } catch (err) {
+    console.error('Gagal mengambil data iuran:', err)
+  }
+}
+
+// Fetch Options Kelas dari API
+const fetchKelas = async () => {
+  try {
+    const response = await api.get('/kelas')
+    const data = response.data.data || response.data
+    kelasList.value = data
+    if (data.length > 0) {
+      form.kelas = data[0].nama_kelas
+    }
+  } catch (err) {
+    console.error('Gagal mengambil data kelas:', err)
+  }
+}
+
 // Filter Logic
 const filteredIuran = computed(() => {
   return iuranList.value.filter(item => {
-    const matchName = item.nama.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchName = String(item.nama).toLowerCase().includes(searchQuery.value.toLowerCase())
     const matchKelas = selectedKelas.value === 'semua' || item.kelas === selectedKelas.value
     return matchName && matchKelas
   })
 })
 
 // CRUD Actions
-const addIuran = () => {
-  iuranList.value.unshift({
-    id: Date.now(),
-    nama: form.nama,
-    kelas: form.kelas,
-    bulan: form.bulan,
-    nominal: form.nominal,
-    status: form.status
-  })
-
-  // Reset Form
-  form.nama = ''
-  showAddModal.value = false
+const addIuran = async () => {
+  isLoading.value = true
+  try {
+    const response = await api.post('/iuran', form)
+    if (response.data) {
+      await fetchIuran()
+      form.nama = ''
+      showAddModal.value = false
+    }
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal menambahkan data iuran')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const openEditModal = (item) => {
@@ -304,17 +354,29 @@ const openEditModal = (item) => {
   showEditModal.value = true
 }
 
-const updateIuran = () => {
-  const index = iuranList.value.findIndex(i => i.id === editForm.id)
-  if (index !== -1) {
-    iuranList.value[index] = { ...editForm }
+const updateIuran = async () => {
+  isLoading.value = true
+  try {
+    const response = await api.put(`/iuran/${editForm.id}`, editForm)
+    if (response.data) {
+      await fetchIuran()
+      showEditModal.value = false
+    }
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal memperbarui data iuran')
+  } finally {
+    isLoading.value = false
   }
-  showEditModal.value = false
 }
 
-const deleteIuran = (id) => {
+const deleteIuran = async (id) => {
   if (confirm('Yakin ingin menghapus riwayat iuran ini?')) {
-    iuranList.value = iuranList.value.filter(i => i.id !== id)
+    try {
+      await api.delete(`/iuran/${id}`)
+      await fetchIuran()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Gagal menghapus data iuran')
+    }
   }
 }
 
@@ -322,6 +384,12 @@ const handleLogout = () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+// Initial Load
+onMounted(() => {
+  fetchIuran()
+  fetchKelas()
+})
 </script>
 
 <style scoped>

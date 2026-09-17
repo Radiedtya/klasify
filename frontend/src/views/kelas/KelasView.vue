@@ -8,41 +8,34 @@
       </div>
 
       <nav class="nav-menu">
-        <router-link to="/dashboard" class="nav-item active">
-    <i class="bi bi-grid-fill"></i>
-    <span>Dashboard</span>
-  </router-link>
-  
-  <!-- UBAH DI SINI -->
-  <router-link to="/siswa" class="nav-item">
-    <i class="bi bi-people-fill"></i>
-    <span>Siswa</span>
-  </router-link>
-
-  <router-link to="/iuran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Iuran</span>
-  </router-link>
-
-  <router-link to="/kelas" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Kelas</span>
-  </router-link>
-
-  <router-link to="/transaksi" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Transaksi</span>
-  </router-link>
-
-  <router-link to="/pengeluaran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Pengeluaran</span>
-  </router-link>
-
-  <router-link to="/laporan" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Laporan</span>
-  </router-link>
+        <router-link to="/bendahara/dashboard" class="nav-item">
+          <i class="bi bi-grid-fill"></i>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/siswa" class="nav-item">
+          <i class="bi bi-people-fill"></i>
+          <span>Siswa</span>
+        </router-link>
+        <router-link to="/iuran" class="nav-item">
+          <i class="bi bi-wallet2"></i>
+          <span>Iuran</span>
+        </router-link>
+        <router-link to="/kelas" class="nav-item active">
+          <i class="bi bi-easel-fill"></i>
+          <span>Kelas</span>
+        </router-link>
+        <router-link to="/transaksi" class="nav-item">
+          <i class="bi bi-receipt"></i>
+          <span>Transaksi</span>
+        </router-link>
+        <router-link to="/pengeluaran" class="nav-item">
+          <i class="bi bi-bag-dash-fill"></i>
+          <span>Pengeluaran</span>
+        </router-link>
+        <router-link to="/laporan" class="nav-item">
+          <i class="bi bi-file-earmark-bar-graph-fill"></i>
+          <span>Laporan</span>
+        </router-link>
       </nav>
 
       <button @click="handleLogout" class="btn-logout">
@@ -70,30 +63,29 @@
             <input 
               type="text" 
               v-model="searchQuery" 
-              placeholder="Cari kelas / wali kelas..." 
+              @input="fetchKelas"
+              placeholder="Cari kelas..." 
             />
           </div>
         </div>
 
         <div class="kelas-grid">
-          <div v-for="kelas in filteredKelas" :key="kelas.id" class="kelas-card">
+          <div v-for="kelas in kelasList" :key="kelas.id" class="kelas-card">
             <div class="card-header">
-              <h3>{{ kelas.namaKelas }}</h3>
-              <span class="badge">{{ kelas.jurusan }}</span>
+              <h3>{{ kelas.nama }}</h3>
+              <span class="badge" :style="!kelas.is_active ? 'background:#fee2e2; color:#ef4444;' : ''">
+                {{ kelas.is_active ? 'Aktif' : 'Non-Aktif' }}
+              </span>
             </div>
             
             <div class="card-body">
               <div class="info-row">
                 <span class="label">Wali Kelas:</span>
-                <span class="value">{{ kelas.waliKelas }}</span>
-              </div>
-              <div class="info-row">
-                <span class="label">Jumlah Siswa:</span>
-                <span class="value">{{ kelas.jumlahSiswa }} Siswa</span>
+                <span class="value">{{ kelas.wali_kelas?.name || kelas.wali_kelas?.nama || '-' }}</span>
               </div>
               <div class="info-row">
                 <span class="label">Tahun Ajaran:</span>
-                <span class="value">{{ kelas.tahunAjaran }}</span>
+                <span class="value">{{ kelas.tahun_ajaran }}</span>
               </div>
             </div>
 
@@ -103,7 +95,7 @@
             </div>
           </div>
 
-          <div v-if="filteredKelas.length === 0" class="empty-state">
+          <div v-if="kelasList.length === 0" class="empty-state">
             Data kelas tidak ditemukan.
           </div>
         </div>
@@ -117,32 +109,24 @@
         <form @submit.prevent="addKelas">
           <div class="form-group">
             <label>Nama Kelas</label>
-            <input type="text" v-model="form.namaKelas" placeholder="Contoh: XII RPL 2" required />
-          </div>
-
-          <div class="form-group">
-            <label>Jurusan</label>
-            <input type="text" v-model="form.jurusan" placeholder="Contoh: RPL" required />
-          </div>
-
-          <div class="form-group">
-            <label>Wali Kelas</label>
-            <input type="text" v-model="form.waliKelas" placeholder="Nama wali kelas" required />
-          </div>
-
-          <div class="form-group">
-            <label>Jumlah Siswa</label>
-            <input type="number" v-model.number="form.jumlahSiswa" placeholder="32" required />
+            <input type="text" v-model="form.nama" placeholder="Contoh: XII RPL 2" required />
           </div>
 
           <div class="form-group">
             <label>Tahun Ajaran</label>
-            <input type="text" v-model="form.tahunAjaran" placeholder="2025/2026" required />
+            <input type="text" v-model="form.tahun_ajaran" placeholder="2025/2026" required />
+          </div>
+
+          <div class="form-group">
+            <label>Wali Kelas (ID User)</label>
+            <input type="number" v-model.number="form.wali_kelas_id" placeholder="ID User Guru (Opsional)" />
           </div>
 
           <div class="modal-actions">
             <button type="button" @click="showAddModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan</button>
+            <button type="submit" class="btn-submit" :disabled="isLoading">
+              {{ isLoading ? 'Menyimpan...' : 'Simpan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -155,32 +139,24 @@
         <form @submit.prevent="updateKelas">
           <div class="form-group">
             <label>Nama Kelas</label>
-            <input type="text" v-model="editForm.namaKelas" required />
-          </div>
-
-          <div class="form-group">
-            <label>Jurusan</label>
-            <input type="text" v-model="editForm.jurusan" required />
-          </div>
-
-          <div class="form-group">
-            <label>Wali Kelas</label>
-            <input type="text" v-model="editForm.waliKelas" required />
-          </div>
-
-          <div class="form-group">
-            <label>Jumlah Siswa</label>
-            <input type="number" v-model.number="editForm.jumlahSiswa" required />
+            <input type="text" v-model="editForm.nama" required />
           </div>
 
           <div class="form-group">
             <label>Tahun Ajaran</label>
-            <input type="text" v-model="editForm.tahunAjaran" required />
+            <input type="text" v-model="editForm.tahun_ajaran" required />
+          </div>
+
+          <div class="form-group">
+            <label>Wali Kelas (ID User)</label>
+            <input type="number" v-model.number="editForm.wali_kelas_id" placeholder="ID User Guru (Opsional)" />
           </div>
 
           <div class="modal-actions">
             <button type="button" @click="showEditModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan Perubahan</button>
+            <button type="submit" class="btn-submit" :disabled="isLoading">
+              {{ isLoading ? 'Memperbarui...' : 'Simpan Perubahan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -190,90 +166,131 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
-// Modal States
+// Setup Client Axios
+const api = axios.create({
+  baseURL: 'http://localhost:8000/api',
+  headers: {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  }
+})
+
+// Pasang Bearer Token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// States
+const kelasList = ref([])
 const showAddModal = ref(false)
 const showEditModal = ref(false)
-
-// Search State
+const isLoading = ref(false)
 const searchQuery = ref('')
 
-// Data Dummy Kelas
-const kelasList = ref([
-  { id: 1, namaKelas: 'XII RPL 1', jurusan: 'RPL', waliKelas: 'Siti Nurhaliza', jumlahSiswa: 34, tahunAjaran: '2025/2026' },
-  { id: 2, namaKelas: 'XII RPL 2', jurusan: 'RPL', waliKelas: 'Budi Santoso', jumlahSiswa: 32, tahunAjaran: '2025/2026' },
-  { id: 3, namaKelas: 'XII TKJ 1', jurusan: 'TKJ', waliKelas: 'Ahmad Dahlan', jumlahSiswa: 36, tahunAjaran: '2025/2026' }
-])
-
-// Form States
+// Form Create
 const form = reactive({
-  namaKelas: '',
-  jurusan: '',
-  waliKelas: '',
-  jumlahSiswa: 30,
-  tahunAjaran: '2025/2026'
+  nama: '',
+  tahun_ajaran: '2025/2026',
+  wali_kelas_id: null,
+  is_active: true
 })
 
+// Form Edit
 const editForm = reactive({
   id: null,
-  namaKelas: '',
-  jurusan: '',
-  waliKelas: '',
-  jumlahSiswa: 0,
-  tahunAjaran: ''
+  nama: '',
+  tahun_ajaran: '',
+  wali_kelas_id: null,
+  is_active: true
 })
 
-// Filter Logic
-const filteredKelas = computed(() => {
-  return kelasList.value.filter(k => {
-    const query = searchQuery.value.toLowerCase()
-    return k.namaKelas.toLowerCase().includes(query) || k.waliKelas.toLowerCase().includes(query)
-  })
-})
-
-// CRUD Actions
-const addKelas = () => {
-  kelasList.value.unshift({
-    id: Date.now(),
-    namaKelas: form.namaKelas,
-    jurusan: form.jurusan,
-    waliKelas: form.waliKelas,
-    jumlahSiswa: form.jumlahSiswa,
-    tahunAjaran: form.tahunAjaran
-  })
-
-  // Reset Form
-  form.namaKelas = ''
-  form.jurusan = ''
-  form.waliKelas = ''
-  showAddModal.value = false
+// Get Data dari API Backend
+const fetchKelas = async () => {
+  try {
+    const params = {}
+    if (searchQuery.value) {
+      params.search = searchQuery.value
+    }
+    const response = await api.get('/kelas', { params })
+    kelasList.value = response.data.data || response.data
+  } catch (err) {
+    console.error('Gagal mengambil data kelas:', err)
+  }
 }
 
+// Tambah Kelas
+const addKelas = async () => {
+  isLoading.value = true
+  try {
+    const response = await api.post('/kelas', form)
+    if (response.data.success) {
+      await fetchKelas()
+      form.nama = ''
+      form.wali_kelas_id = null
+      showAddModal.value = false
+    }
+  } catch (err) {
+    const errorMsg = err.response?.data?.message || 'Gagal menambahkan kelas'
+    const errors = err.response?.data?.errors
+    if (errors) {
+      const firstKey = Object.keys(errors)[0]
+      alert(`${errorMsg}: ${errors[firstKey][0]}`)
+    } else {
+      alert(errorMsg)
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Buka Modal Edit
 const openEditModal = (kelas) => {
   editForm.id = kelas.id
-  editForm.namaKelas = kelas.namaKelas
-  editForm.jurusan = kelas.jurusan
-  editForm.waliKelas = kelas.waliKelas
-  editForm.jumlahSiswa = kelas.jumlahSiswa
-  editForm.tahunAjaran = kelas.tahunAjaran
+  editForm.nama = kelas.nama
+  editForm.tahun_ajaran = kelas.tahun_ajaran
+  editForm.wali_kelas_id = kelas.wali_kelas_id
+  editForm.is_active = Boolean(kelas.is_active)
   showEditModal.value = true
 }
 
-const updateKelas = () => {
-  const index = kelasList.value.findIndex(k => k.id === editForm.id)
-  if (index !== -1) {
-    kelasList.value[index] = { ...editForm }
+// Update Kelas
+const updateKelas = async () => {
+  isLoading.value = true
+  try {
+    const response = await api.put(`/kelas/${editForm.id}`, editForm)
+    if (response.data.success) {
+      await fetchKelas()
+      showEditModal.value = false
+    }
+  } catch (err) {
+    alert(err.response?.data?.message || 'Gagal memperbarui data kelas')
+  } finally {
+    isLoading.value = false
   }
-  showEditModal.value = false
 }
 
-const deleteKelas = (id) => {
+// Hapus Kelas
+const deleteKelas = async (id) => {
   if (confirm('Yakin ingin menghapus kelas ini?')) {
-    kelasList.value = kelasList.value.filter(k => k.id !== id)
+    try {
+      const response = await api.delete(`/kelas/${id}`)
+      if (response.data.success) {
+        await fetchKelas()
+      }
+    } catch (err) {
+      // Menampilkan balasan error dari backend jika kelas masih memiliki relasi siswa/iuran
+      alert(err.response?.data?.message || 'Gagal menghapus kelas')
+    }
   }
 }
 
@@ -281,6 +298,10 @@ const handleLogout = () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+onMounted(() => {
+  fetchKelas()
+})
 </script>
 
 <style scoped>

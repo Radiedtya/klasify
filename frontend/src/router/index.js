@@ -19,14 +19,14 @@ const router = createRouter({
       component: () => import('../views/auth/RegisterView.vue')
     },
     {
-      path: '/dashboard',
-      name: 'dashboard',
+      path: '/bendahara/dashboard',
+      name: 'bendahara-dashboard',
       component: () => import('../views/dashboard/DashboardView.vue'),
       meta: { requiresAuth: true }
     },
     {
-      path: '/dashboard-siswa',
-      name: 'dashboard-siswa',
+      path: '/siswa/dashboard',
+      name: 'siswa-dashboard',
       component: () => import('../views/dashboard/DashboardSiswa.vue'), 
       meta: { requiresAuth: true }
     },
@@ -112,6 +112,24 @@ const router = createRouter({
       path: '/kelas',
       name: 'kelas',
       component: () => import('../views/kelas/KelasView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/transaksi',
+      name: 'transaksi',
+      component: () => import('../views/transaksi/TransaksiView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/pengeluaran',
+      name: 'pengeluaran',
+      component: () => import('../views/pengeluaran/PengeluaranView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/laporan',
+      name: 'laporan',
+      component: () => import('../views/laporan/LaporanView.vue'),
       meta: { requiresAuth: true }
     }
   ]

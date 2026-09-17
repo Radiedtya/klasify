@@ -8,7 +8,7 @@
       </div>
 
       <nav class="nav-menu">
-        <router-link to="/dashboard" class="nav-item">
+        <router-link to="/bendahara/dashboard" class="nav-item">
           <i class="bi bi-grid-fill"></i>
           <span>Dashboard</span>
         </router-link>
@@ -211,8 +211,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
@@ -224,12 +225,8 @@ const showEditModal = ref(false)
 const searchQuery = ref('')
 const selectedTipe = ref('semua')
 
-// Data Dummy Transaksi
-const transaksiList = ref([
-  { id: 101, siswa: 'Siti Nurhaliza', tanggal: '2026-05-02', metode: 'Tunai', jumlah: 20000, tipe: 'Pemasukan' },
-  { id: 102, siswa: 'Pembelian Spidol & Penghapus', tanggal: '2026-05-03', metode: 'Tunai', jumlah: 15000, tipe: 'Pengeluaran' },
-  { id: 103, siswa: 'Ani Rahayu', tanggal: '2026-05-04', metode: 'Transfer QRIS', jumlah: 20000, tipe: 'Pemasukan' }
-])
+// Data Transaksi dari Backend
+const transaksiList = ref([])
 
 // Form States
 const form = reactive({
@@ -249,31 +246,67 @@ const editForm = reactive({
   tipe: 'Pemasukan'
 })
 
-// Filter Logic
+// Configuration Axios Instance / Headers
+const API_BASE_URL = 'http://127.0.0.1:8000/api' // Sesuaikan port/URL backend
+const getAuthHeader = () => ({
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem('token')}`
+  }
+})
+
+// 1. Fetch Data dari Backend (READ)
+const fetchTransaksi = async () => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/transaksi`, getAuthHeader())
+    // Menyesuaikan jika response format backend adalah response.data.data
+    transaksiList.value = response.data.data || response.data
+  } catch (error) {
+    console.error('Gagal mengambil data transaksi:', error)
+    if (error.response && error.response.status === 401) {
+      handleLogout()
+    }
+  }
+}
+
+// Fetch data saat komponen pertama kali dimuat
+onMounted(() => {
+  fetchTransaksi()
+})
+
+// Filter Logic (Tetap berjalan di frontend dari hasil fetch)
 const filteredTransaksi = computed(() => {
   return transaksiList.value.filter(item => {
-    const matchSearch = item.siswa.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchSearch = item.siswa ? item.siswa.toLowerCase().includes(searchQuery.value.toLowerCase()) : false
     const matchTipe = selectedTipe.value === 'semua' || item.tipe === selectedTipe.value
     return matchSearch && matchTipe
   })
 })
 
-// CRUD Actions
-const addTransaksi = () => {
-  transaksiList.value.unshift({
-    id: Date.now(),
-    siswa: form.siswa,
-    tanggal: form.tanggal,
-    metode: form.metode,
-    jumlah: form.jumlah,
-    tipe: form.tipe
-  })
+// 2. Tambah Data (CREATE)
+const addTransaksi = async () => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/transaksi`, form, getAuthHeader())
+    
+    // Tambahkan item baru dari respon server atau refetch data
+    if (response.data.data) {
+      transaksiList.value.unshift(response.data.data)
+    } else {
+      await fetchTransaksi()
+    }
 
-  // Reset Form
-  form.siswa = ''
-  showAddModal.value = false
+    // Reset Form & Tutup Modal
+    form.siswa = ''
+    form.jumlah = 20000
+    form.metode = 'Tunai'
+    form.tipe = 'Pemasukan'
+    showAddModal.value = false
+  } catch (error) {
+    console.error('Gagal menambah transaksi:', error)
+    alert('Terjadi kesalahan saat menyimpan data.')
+  }
 }
 
+// Open Edit Modal
 const openEditModal = (item) => {
   editForm.id = item.id
   editForm.siswa = item.siswa
@@ -284,20 +317,37 @@ const openEditModal = (item) => {
   showEditModal.value = true
 }
 
-const updateTransaksi = () => {
-  const index = transaksiList.value.findIndex(t => t.id === editForm.id)
-  if (index !== -1) {
-    transaksiList.value[index] = { ...editForm }
+// 3. Update Data (UPDATE)
+const updateTransaksi = async () => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/transaksi/${editForm.id}`, editForm, getAuthHeader())
+    
+    const index = transaksiList.value.findIndex(t => t.id === editForm.id)
+    if (index !== -1) {
+      transaksiList.value[index] = response.data.data || { ...editForm }
+    }
+    
+    showEditModal.value = false
+  } catch (error) {
+    console.error('Gagal memperbarui transaksi:', error)
+    alert('Terjadi kesalahan saat mengubah data.')
   }
-  showEditModal.value = false
 }
 
-const deleteTransaksi = (id) => {
+// 4. Hapus Data (DELETE)
+const deleteTransaksi = async (id) => {
   if (confirm('Yakin ingin menghapus riwayat transaksi ini?')) {
-    transaksiList.value = transaksiList.value.filter(t => t.id !== id)
+    try {
+      await axios.delete(`${API_BASE_URL}/transaksi/${id}`, getAuthHeader())
+      transaksiList.value = transaksiList.value.filter(t => t.id !== id)
+    } catch (error) {
+      console.error('Gagal menghapus transaksi:', error)
+      alert('Gagal menghapus data dari server.')
+    }
   }
 }
 
+// Logout Action
 const handleLogout = () => {
   localStorage.removeItem('token')
   router.push('/login')

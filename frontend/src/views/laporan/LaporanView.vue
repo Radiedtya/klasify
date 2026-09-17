@@ -8,7 +8,7 @@
       </div>
 
       <nav class="nav-menu">
-        <router-link to="/dashboard" class="nav-item">
+        <router-link to="/bendahara/dashboard" class="nav-item">
           <i class="bi bi-grid-fill"></i>
           <span>Dashboard</span>
         </router-link>
@@ -122,23 +122,132 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 
-// Search & Filter State
+// --- State API & Transaksi ---
+const loading = ref(false)
+const errorMessage = ref('')
+
+// State Ringkasan Kas Total
+const ringkasanKas = ref({
+  total_pemasukan: 0,
+  total_pengeluaran: 0,
+  saldo: 0
+})
+
+// Filter & Param State
 const searchQuery = ref('')
 const selectedStatus = ref('semua')
+const filterTipe = ref('semua') // 'semua', 'bulan', 'siswa'
+const bulanSelected = ref(new Date().getMonth() + 1)
+const tahunSelected = ref(new Date().getFullYear())
+const siswaIdSelected = ref(null)
 
-// Data Dummy Laporan Kas
-const daftarLaporan = ref([
-  { id: 301, kategori: 'Laporan Kas Bulanan', nominal: 2500000, pembuat: 'Siti Nurhaliza', tanggal: '2026-05-01', status: 'Selesai' },
-  { id: 302, kategori: 'Laporan Rekap Iuran', nominal: 1800000, pembuat: 'Ani Rahayu', tanggal: '2026-05-03', status: 'Proses' },
-  { id: 303, kategori: 'Laporan Pengeluaran Acara', nominal: 450000, pembuat: 'Budi Santoso', tanggal: '2026-05-04', status: 'Selesai' }
-])
+// Data Hasil Integrasi Backend
+const daftarLaporan = ref([])
 
-// Filter Logic
+// Helper Axios Configuration dengan Interceptor / Authorization Header
+const api = axios.create({
+  baseURL: '/api', // Sesuaikan URL backend Laravel Anda (misal: 'http://127.0.0.1:8000/api')
+  headers: {
+    'Accept': 'application/json'
+  }
+})
+
+// Injeksi Token Bearer
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+// --- API Calls ---
+
+// 1. Fetch Ringkasan Kas Total
+const fetchKasTotal = async () => {
+  try {
+    const response = await api.get('/laporan/kas')
+    if (response.data.success) {
+      ringkasanKas.value = response.data.data
+    }
+  } catch (err) {
+    console.error('Gagal memuat ringkasan kas:', err)
+  }
+}
+
+// 2. Fetch Daftar Laporan Transaksi (Berdasarkan Tipe Filter)
+const fetchLaporanData = async () => {
+  loading.value = true
+  errorMessage.value = ''
+  daftarLaporan.value = []
+
+  try {
+    if (filterTipe.value === 'bulan') {
+      const response = await api.get(`/laporan/per-bulan/${bulanSelected.value}/${tahunSelected.value}`)
+      if (response.data.success) {
+        // Gabungkan transaksi pemasukan
+        daftarLaporan.value = response.data.data.transaksi.map(t => ({
+          id: t.id,
+          kategori: t.iuran?.nama_iuran || 'Pemasukan Iuran',
+          nominal: parseFloat(t.jumlah),
+          pembuat: t.siswa?.user?.name || 'Siswa',
+          tanggal: t.tanggal_bayar,
+          status: 'Selesai',
+          tipe: 'pemasukan'
+        }))
+      }
+    } else if (filterTipe.value === 'siswa' && siswaIdSelected.value) {
+      const response = await api.get(`/laporan/per-siswa/${siswaIdSelected.value}`)
+      if (response.data.success) {
+        daftarLaporan.value = response.data.data.transaksi.map(t => ({
+          id: t.id,
+          kategori: t.iuran?.nama_iuran || 'Pembayaran Siswa',
+          nominal: parseFloat(t.jumlah),
+          pembuat: response.data.data.siswa?.user?.name || '-',
+          tanggal: t.tanggal_bayar,
+          status: t.status === 'confirmed' ? 'Selesai' : 'Proses',
+          tipe: 'pemasukan'
+        }))
+      }
+    } else {
+      // Default: Ambil Laporan Kas Keseluruhan
+      const response = await api.get('/laporan/kas')
+      if (response.data.success) {
+        // Memetakan struktur ringkasan sebagai row laporan
+        daftarLaporan.value = [
+          {
+            id: 'IN-TOTAL',
+            kategori: 'Total Pemasukan Kas',
+            nominal: response.data.data.total_pemasukan,
+            pembuat: 'Sistem',
+            tanggal: new Date().toISOString().split('T')[0],
+            status: 'Selesai'
+          },
+          {
+            id: 'OUT-TOTAL',
+            kategori: 'Total Pengeluaran Kas',
+            nominal: response.data.data.total_pengeluaran,
+            pembuat: 'Sistem',
+            tanggal: new Date().toISOString().split('T')[0],
+            status: 'Selesai'
+          }
+        ]
+      }
+    }
+  } catch (err) {
+    errorMessage.value = err.response?.data?.message || 'Gagal memuat data laporan dari server'
+  } finally {
+    loading.value = false
+  }
+}
+
+// --- Dynamic Filter Computed ---
 const filteredLaporan = computed(() => {
   return daftarLaporan.value.filter(item => {
     const matchSearch = item.kategori.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
@@ -148,26 +257,57 @@ const filteredLaporan = computed(() => {
   })
 })
 
-// Currency Formatting Helper
+// --- Export Handlers (Excel & PDF Stream) ---
+const exportLaporan = async (format, typeParam = 'kas') => {
+  try {
+    const endpoint = format === 'pdf' ? '/laporan/export-pdf' : '/laporan/export-excel'
+    const params = {
+      type: typeParam,
+      bulan: bulanSelected.value,
+      tahun: tahunSelected.value,
+      siswa_id: siswaIdSelected.value
+    }
+
+    const response = await api.get(endpoint, {
+      params,
+      responseType: 'blob'
+    })
+
+    // Auto Download Trigger Via Blob URL
+    const fileExtension = format === 'pdf' ? 'pdf' : 'xlsx'
+    const blob = new Blob([response.data])
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = `Laporan_${typeParam}_${Date.now()}.${fileExtension}`
+    link.click()
+    window.URL.revokeObjectURL(link.href)
+
+  } catch (err) {
+    alert('Gagal mengunduh berkas export. Pastikan parameter laporan valid.')
+    console.error('Export error:', err)
+  }
+}
+
+// --- Helpers ---
 const rupiah = (val) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
-// Badge Status Helper
 const getStatusClass = (status) => {
   if (status === 'Selesai') return 'approved'
   if (status === 'Proses') return 'pending'
   return ''
 }
 
-// Export Action
-const exportLaporan = (type, item = null) => {
-  if (item) {
-    alert(`Mengeksport ${item.kategori} ke format ${type}...`)
-  } else {
-    alert(`Menyiapkan export seluruh laporan ke format ${type}...`)
-  }
-}
+// --- Lifecycle & Watchers ---
+onMounted(() => {
+  fetchKasTotal()
+  fetchLaporanData()
+})
+
+watch([filterTipe, bulanSelected, tahunSelected, siswaIdSelected], () => {
+  fetchLaporanData()
+})
 
 // Logout Action
 const handleLogout = () => {

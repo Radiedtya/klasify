@@ -51,13 +51,11 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch } from '../../service/api'
 
 const router = useRouter()
 const errorMessage = ref('')
 const isLoading = ref(false)
 
-// Menyamakan variabel form dengan v-model di template
 const form = ref({
   email: '',
   password: ''
@@ -68,24 +66,43 @@ const handleLogin = async () => {
   errorMessage.value = ''
 
   try {
-    const res = await apiFetch('/login', {
+    // Memanggil API Backend secara langsung menggunakan Native fetch
+    const response = await fetch('http://localhost:8000/api/login', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       body: JSON.stringify({
         email: form.value.email,
         password: form.value.password
       })
     })
 
-    if (res.token) {
-      localStorage.setItem('token', res.token)
-    } else if (res.data && res.data.token) {
-      localStorage.setItem('token', res.data.token)
+    const result = await response.json()
+
+    if (!response.ok || !result.success) {
+      // Ambil pesan error dari backend
+      throw new Error(result.message || 'Login gagal, periksa email dan password!')
     }
 
-    router.push('/dashboard-guru')
+    // Simpan Token dan Data User ke localStorage
+    localStorage.setItem('token', result.data.token)
+    localStorage.setItem('role', result.data.role)
+    localStorage.setItem('user', JSON.stringify(result.data.user))
+
+    // Redirect berdasarkan role yang diterima dari AuthController.php
+    const userRole = result.data.role
+    if (userRole === 'guru') {
+      router.push('/guru/profile')
+    } else if (userRole === 'bendahara') {
+      router.push('/bendahara/dashboard')
+    } else {
+      router.push('/siswa/dashboard')
+    }
 
   } catch (error) {
-    errorMessage.value = error.message || 'Login gagal, periksa email dan password!'
+    errorMessage.value = error.message
   } finally {
     isLoading.value = false
   }

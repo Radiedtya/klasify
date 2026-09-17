@@ -8,42 +8,35 @@
       </div>
 
       <nav class="nav-menu">
-  <router-link to="/dashboard" class="nav-item active">
-    <i class="bi bi-grid-fill"></i>
-    <span>Dashboard</span>
-  </router-link>
-  
-  <!-- UBAH DI SINI -->
-  <router-link to="/siswa" class="nav-item">
-    <i class="bi bi-people-fill"></i>
-    <span>Siswa</span>
-  </router-link>
-
-  <router-link to="/iuran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Iuran</span>
-  </router-link>
-
-  <router-link to="/kelas" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Kelas</span>
-  </router-link>
-
-  <router-link to="/transaksi" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Transaksi</span>
-  </router-link>
-
-  <router-link to="/pengeluaran" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Pengeluaran</span>
-  </router-link>
-
-  <router-link to="/laporan" class="nav-item">
-    <i class="bi bi-wallet2"></i>
-    <span>Laporan</span>
-  </router-link>
-</nav>
+        <router-link to="/bendahara/dashboard" class="nav-item active">
+          <i class="bi bi-grid-fill"></i>
+          <span>Dashboard</span>
+        </router-link>
+        <router-link to="/siswa" class="nav-item">
+          <i class="bi bi-people-fill"></i>
+          <span>Siswa</span>
+        </router-link>
+        <router-link to="/iuran" class="nav-item">
+          <i class="bi bi-wallet2"></i>
+          <span>Iuran</span>
+        </router-link>
+        <router-link to="/kelas" class="nav-item">
+          <i class="bi bi-easel-fill"></i>
+          <span>Kelas</span>
+        </router-link>
+        <router-link to="/transaksi" class="nav-item">
+          <i class="bi bi-receipt"></i>
+          <span>Transaksi</span>
+        </router-link>
+        <router-link to="/pengeluaran" class="nav-item">
+          <i class="bi bi-bag-dash-fill"></i>
+          <span>Pengeluaran</span>
+        </router-link>
+        <router-link to="/laporan" class="nav-item">
+          <i class="bi bi-file-earmark-bar-graph-fill"></i>
+          <span>Laporan</span>
+        </router-link>
+      </nav>
 
       <button @click="handleLogout" class="btn-logout">
         <i class="bi bi-box-arrow-right"></i>
@@ -55,7 +48,7 @@
     <main class="main-content">
       <header class="topbar">
         <div>
-          <h1>Pengelolaan Kas Kelas</h1>
+          <h1>Pengelolaan Kas Kelas (Bendahara)</h1>
           <p>Catat dan pantau transaksi kas kelas secara real-time.</p>
         </div>
         <button @click="showModal = true" class="btn-add">
@@ -63,80 +56,93 @@
         </button>
       </header>
 
-      <!-- Grid Ringkasan Kas Otomatis Terhitung -->
-      <section class="cards-grid">
-        <div class="card">
-          <div class="card-info">
-            <h3>Total Sisa Kas</h3>
-            <p class="amount">Rp {{ formatRupiah(totalKas) }}</p>
-          </div>
-          <div class="card-icon blue">💰</div>
-        </div>
+      <!-- State Loading -->
+      <div v-if="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Memuat data kas...</p>
+      </div>
 
-        <div class="card">
-          <div class="card-info">
-            <h3>Total Pemasukan</h3>
-            <p class="amount green">+ Rp {{ formatRupiah(totalPemasukan) }}</p>
-          </div>
-          <div class="card-icon green">📈</div>
-        </div>
+      <!-- State Error -->
+      <div v-else-if="errorMessage" class="error-alert">
+        {{ errorMessage }}
+      </div>
 
-        <div class="card">
-          <div class="card-info">
-            <h3>Total Pengeluaran</h3>
-            <p class="amount red">- Rp {{ formatRupiah(totalPengeluaran) }}</p>
+      <template v-else>
+        <!-- Grid Ringkasan Kas Otomatis Terhitung dari Backend -->
+        <section class="cards-grid">
+          <div class="card">
+            <div class="card-info">
+              <h3>Total Sisa Kas</h3>
+              <p class="amount">Rp {{ formatRupiah(totalKas) }}</p>
+            </div>
+            <div class="card-icon blue">💰</div>
           </div>
-          <div class="card-icon red">📉</div>
-        </div>
-      </section>
 
-      <!-- Tabel Transaksi Kas (FULL CRUD IMPLEMENTED) -->
-      <section class="table-section">
-        <h2>Riwayat Transaksi</h2>
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Tanggal</th>
-              <th>Keterangan</th>
-              <th>Tipe</th>
-              <th>Jumlah</th>
-              <th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in transactions" :key="item.id">
-              <td>{{ item.date }}</td>
-              <td>{{ item.title }}</td>
-              <td>
-                <span :class="['badge', item.type === 'in' ? 'in' : 'out']">
-                  {{ item.type === 'in' ? 'Pemasukan' : 'Pengeluaran' }}
-                </span>
-              </td>
-              <td :class="item.type === 'in' ? 'text-green' : 'text-red'">
-                {{ item.type === 'in' ? '+' : '-' }} Rp {{ formatRupiah(item.amount) }}
-              </td>
-              <td>
-                <div class="action-buttons">
-                  <button @click="openDetailModal(item)" class="btn-show" title="Detail / Read">
-                    Lihat
-                  </button>
-                  <button @click="openEditModal(item)" class="btn-edit" title="Edit / Update">
-                    Edit
-                  </button>
-                  <button @click="deleteTransaction(item.id)" class="btn-delete" title="Hapus / Delete">
-                    Hapus
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="transactions.length === 0">
-              <td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">
-                Belum ada transaksi recorded.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+          <div class="card">
+            <div class="card-info">
+              <h3>Total Pemasukan</h3>
+              <p class="amount green">+ Rp {{ formatRupiah(totalPemasukan) }}</p>
+            </div>
+            <div class="card-icon green">📈</div>
+          </div>
+
+          <div class="card">
+            <div class="card-info">
+              <h3>Total Pengeluaran</h3>
+              <p class="amount red">- Rp {{ formatRupiah(totalPengeluaran) }}</p>
+            </div>
+            <div class="card-icon red">📉</div>
+          </div>
+        </section>
+
+        <!-- Tabel Transaksi Kas -->
+        <section class="table-section">
+          <h2>Riwayat Transaksi</h2>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Tanggal</th>
+                <th>Keterangan</th>
+                <th>Tipe</th>
+                <th>Jumlah</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in transactions" :key="item.id">
+                <td>{{ formatDate(item.created_at || item.tanggal) }}</td>
+                <td>{{ item.keterangan || item.title }}</td>
+                <td>
+                  <span :class="['badge', getTransactionType(item) === 'in' ? 'in' : 'out']">
+                    {{ getTransactionType(item) === 'in' ? 'Pemasukan' : 'Pengeluaran' }}
+                  </span>
+                </td>
+                <td :class="getTransactionType(item) === 'in' ? 'text-green' : 'text-red'">
+                  {{ getTransactionType(item) === 'in' ? '+' : '-' }} Rp {{ formatRupiah(item.jumlah || item.amount) }}
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button @click="openDetailModal(item)" class="btn-show" title="Detail / Read">
+                      Lihat
+                    </button>
+                    <button @click="openEditModal(item)" class="btn-edit" title="Edit / Update">
+                      Edit
+                    </button>
+                    <button @click="deleteTransaction(item.id)" class="btn-delete" title="Hapus / Delete">
+                      Hapus
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr v-if="transactions.length === 0">
+                <td colspan="5" style="text-align: center; color: #94a3b8; padding: 20px;">
+                  Belum ada transaksi recorded.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </template>
     </main>
 
     <!-- Modal Form (CREATE) -->
@@ -163,8 +169,10 @@
           </div>
 
           <div class="modal-actions">
-            <button type="button" @click="showModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan</button>
+            <button type="button" @click="showModal = false" class="btn-cancel" :disabled="submitting">Batal</button>
+            <button type="submit" class="btn-submit" :disabled="submitting">
+              {{ submitting ? 'Menyimpan...' : 'Simpan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -181,22 +189,22 @@
           </div>
           <div class="detail-item">
             <span class="detail-label">Tanggal</span>
-            <span class="detail-value">{{ selectedDetail.date }}</span>
+            <span class="detail-value">{{ formatDate(selectedDetail.created_at || selectedDetail.tanggal) }}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Keterangan</span>
-            <span class="detail-value">{{ selectedDetail.title }}</span>
+            <span class="detail-value">{{ selectedDetail.keterangan || selectedDetail.title }}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Kategori Tipe</span>
-            <span :class="['badge', selectedDetail.type === 'in' ? 'in' : 'out']">
-              {{ selectedDetail.type === 'in' ? 'Pemasukan (+)' : 'Pengeluaran (-)' }}
+            <span :class="['badge', getTransactionType(selectedDetail) === 'in' ? 'in' : 'out']">
+              {{ getTransactionType(selectedDetail) === 'in' ? 'Pemasukan (+)' : 'Pengeluaran (-)' }}
             </span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Nominal Uang</span>
-            <span :class="['detail-amount', selectedDetail.type === 'in' ? 'text-green' : 'text-red']">
-              {{ selectedDetail.type === 'in' ? '+' : '-' }} Rp {{ formatRupiah(selectedDetail.amount) }}
+            <span :class="['detail-amount', getTransactionType(selectedDetail) === 'in' ? 'text-green' : 'text-red']">
+              {{ getTransactionType(selectedDetail) === 'in' ? '+' : '-' }} Rp {{ formatRupiah(selectedDetail.jumlah || selectedDetail.amount) }}
             </span>
           </div>
         </div>
@@ -231,8 +239,10 @@
           </div>
 
           <div class="modal-actions">
-            <button type="button" @click="showEditModal = false" class="btn-cancel">Batal</button>
-            <button type="submit" class="btn-submit">Simpan Perubahan</button>
+            <button type="button" @click="showEditModal = false" class="btn-cancel" :disabled="submitting">Batal</button>
+            <button type="submit" class="btn-submit" :disabled="submitting">
+              {{ submitting ? 'Menyimpan...' : 'Simpan Perubahan' }}
+            </button>
           </div>
         </form>
       </div>
@@ -241,20 +251,28 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const API_BASE_URL = 'http://localhost:8000/api'
+
+// UI State
+const loading = ref(true)
+const submitting = ref(false)
+const errorMessage = ref('')
 const showModal = ref(false)
 const showEditModal = ref(false)
 const showDetailModal = ref(false)
 const selectedDetail = ref(null)
 
-// State data transaksi (READ initial data)
-const transactions = ref([
-  { id: 1, date: '03 Sep 2026', title: 'Uang Kas Mingguan - Ani', type: 'in', amount: 10000 },
-  { id: 2, date: '02 Sep 2026', title: 'Beli Spidol Boardmarker', type: 'out', amount: 15000 }
-])
+// Data State
+const transactions = ref([])
+const stats = reactive({
+  totalKas: 0,
+  pemasukan: 0,
+  pengeluaran: 0
+})
 
 // Form state (CREATE)
 const form = reactive({
@@ -271,82 +289,198 @@ const editForm = reactive({
   amount: null
 })
 
-// Hitung-hitungan kalkulasi otomatis (KAS)
+// Helper Authorization Headers
+const getHeaders = () => {
+  const token = localStorage.getItem('token')
+  return {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Authorization': `Bearer ${token}`
+  }
+}
+
+// ----------------------------------------------------
+// READ / GET DATA FROM BACKEND
+// ----------------------------------------------------
+const fetchDashboardData = async () => {
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/dashboard`, {
+      method: 'GET',
+      headers: getHeaders()
+    })
+
+    const result = await res.json()
+    if (!res.ok || !result.success) {
+      throw new Error(result.message || 'Gagal memuat data dari server')
+    }
+
+    const data = result.data
+
+    // 1. Simpan statistik jika disediakan oleh backend
+    if (data.statistik) {
+      stats.totalKas = data.statistik.total_kas || 0
+      stats.pemasukan = data.statistik.pemasukan_bulan_ini || 0
+      stats.pengeluaran = data.statistik.pengeluaran_bulan_ini || 0
+    }
+
+    // 2. Ambil daftar transaksi (dari transaksi_pending_list / riwayat_transaksi / list umum)
+    transactions.value = data.transaksi_pending_list || data.riwayat_transaksi || data.transaksi || []
+  } catch (err) {
+    errorMessage.value = err.message
+  } finally {
+    loading.value = false
+  }
+}
+
+// ----------------------------------------------------
+// COMPUTED KAS STATS (FALBACK JIKA BACKEND TIDAK HITUNG)
+// ----------------------------------------------------
 const totalPemasukan = computed(() => {
+  if (stats.pemasukan > 0) return stats.pemasukan
   return transactions.value
-    .filter(t => t.type === 'in')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter(t => getTransactionType(t) === 'in')
+    .reduce((sum, t) => sum + (t.jumlah || t.amount || 0), 0)
 })
 
 const totalPengeluaran = computed(() => {
+  if (stats.pengeluaran > 0) return stats.pengeluaran
   return transactions.value
-    .filter(t => t.type === 'out')
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter(t => getTransactionType(t) === 'out')
+    .reduce((sum, t) => sum + (t.jumlah || t.amount || 0), 0)
 })
 
-const totalKas = computed(() => totalPemasukan.value - totalPengeluaran.value)
+const totalKas = computed(() => {
+  if (stats.totalKas > 0) return stats.totalKas
+  return totalPemasukan.value - totalPengeluaran.value
+})
 
-// Format angka ke format Rupiah
-const formatRupiah = (val) => {
-  return new Intl.NumberFormat('id-ID').format(val || 0)
+// ----------------------------------------------------
+// CREATE TRANSACTION (POST)
+// ----------------------------------------------------
+const addTransaction = async () => {
+  submitting.value = true
+  try {
+    const payload = {
+      keterangan: form.title,
+      tipe: form.type,
+      jumlah: form.amount
+    }
+
+    const res = await fetch(`${API_BASE_URL}/transaksi`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    })
+
+    const result = await res.json()
+    if (!res.ok) throw new Error(result.message || 'Gagal menambah transaksi')
+
+    // Reset Form & Refetch Data
+    form.title = ''
+    form.type = 'in'
+    form.amount = null
+    showModal.value = false
+    await fetchDashboardData()
+  } catch (err) {
+    alert(err.message)
+  } finally {
+    submitting.value = false
+  }
 }
 
-// Fungsi CREATE
-const addTransaction = () => {
-  const today = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-  
-  transactions.value.unshift({
-    id: Date.now(),
-    date: today,
-    title: form.title,
-    type: form.type,
-    amount: form.amount
-  })
-
-  // Reset form & tutup modal
-  form.title = ''
-  form.type = 'in'
-  form.amount = null
-  showModal.value = false
-}
-
-// Fungsi SHOW / READ Single Item
+// ----------------------------------------------------
+// SHOW / DETAIL TRANSACTION
+// ----------------------------------------------------
 const openDetailModal = (item) => {
   selectedDetail.value = item
   showDetailModal.value = true
 }
 
-// Fungsi Buka Modal Edit & Isi Datanya
+// ----------------------------------------------------
+// UPDATE TRANSACTION (PUT / PATCH)
+// ----------------------------------------------------
 const openEditModal = (item) => {
   editForm.id = item.id
-  editForm.title = item.title
-  editForm.type = item.type
-  editForm.amount = item.amount
+  editForm.title = item.keterangan || item.title
+  editForm.type = getTransactionType(item)
+  editForm.amount = item.jumlah || item.amount
   showEditModal.value = true
 }
 
-// Fungsi UPDATE
-const updateTransaction = () => {
-  const index = transactions.value.findIndex(t => t.id === editForm.id)
-  if (index !== -1) {
-    transactions.value[index].title = editForm.title
-    transactions.value[index].type = editForm.type
-    transactions.value[index].amount = editForm.amount
+const updateTransaction = async () => {
+  submitting.value = true
+  try {
+    const payload = {
+      keterangan: editForm.title,
+      tipe: editForm.type,
+      jumlah: editForm.amount
+    }
+
+    const res = await fetch(`${API_BASE_URL}/transaksi/${editForm.id}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
+    })
+
+    const result = await res.json()
+    if (!res.ok) throw new Error(result.message || 'Gagal mengubah transaksi')
+
+    showEditModal.value = false
+    await fetchDashboardData()
+  } catch (err) {
+    alert(err.message)
+  } finally {
+    submitting.value = false
   }
-  showEditModal.value = false
 }
 
-// Fungsi DELETE
-const deleteTransaction = (id) => {
-  if (confirm('Yakin ingin menghapus transaksi ini?')) {
-    transactions.value = transactions.value.filter(t => t.id !== id)
+// ----------------------------------------------------
+// DELETE TRANSACTION (DELETE)
+// ----------------------------------------------------
+const deleteTransaction = async (id) => {
+  if (!confirm('Yakin ingin menghapus transaksi ini?')) return
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/transaksi/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    })
+
+    const result = await res.json()
+    if (!res.ok) throw new Error(result.message || 'Gagal menghapus transaksi')
+
+    await fetchDashboardData()
+  } catch (err) {
+    alert(err.message)
   }
+}
+
+// Helper Formatters
+const getTransactionType = (item) => {
+  if (item.tipe) return item.tipe === 'pemasukan' ? 'in' : item.tipe === 'pengeluaran' ? 'out' : item.tipe
+  return item.type || 'in'
+}
+
+const formatRupiah = (val) => {
+  return new Intl.NumberFormat('id-ID').format(val || 0)
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 const handleLogout = () => {
   localStorage.removeItem('token')
   router.push('/login')
 }
+
+onMounted(() => {
+  fetchDashboardData()
+})
 </script>
 
 <style scoped>
@@ -476,7 +610,6 @@ const handleLogout = () => {
   margin: 0;
 }
 
-/* Perbaikan Utama: Tombol Tambah Transaksi */
 .btn-add {
   background: #3b82f6;
   color: #ffffff;
@@ -678,4 +811,32 @@ const handleLogout = () => {
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
 .btn-cancel { background: #f1f5f9; color: #475569; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 .btn-submit { background: #3b82f6; color: #ffffff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+/* Loading & Error States */
+.loading-state, .error-alert {
+  text-align: center;
+  padding: 48px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.error-alert {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 </style>
